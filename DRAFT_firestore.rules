@@ -1,0 +1,215 @@
+rules_version = '2';
+
+service cloud.firestore {
+  match /databases/{database}/documents {
+    // Global Safety Net: Default-deny catch-all
+    match /{document=**} {
+      allow read, write: if false;
+    }
+
+    // Hardened Global Helpers
+    function isSignedIn() {
+      return request.auth != null;
+    }
+
+    function isVerifiedUser() {
+      return isSignedIn() && request.auth.token.email_verified == true;
+    }
+
+    function isOwner(userId) {
+      return isSignedIn() && request.auth.uid == userId;
+    }
+
+    function isVerifiedOwner(userId) {
+      return isVerifiedUser() && request.auth.uid == userId;
+    }
+
+    function isValidId(id) {
+      return id is string && id.size() >= 1 && id.size() <= 128 && id.matches('^[a-zA-Z0-9_\\-]+$');
+    }
+
+    function incoming() {
+      return request.resource.data;
+    }
+
+    function existing() {
+      return resource.data;
+    }
+
+    // Validation Blueprint: UserPreference
+    function isValidUserPreference(data, userId) {
+      return data.keys().hasAll([
+        'userId',
+        'persona',
+        'highContrast',
+        'dyslexiaFont',
+        'bionicReading',
+        'readingRuler',
+        'fontSize',
+        'lineSpacing',
+        'speechRate',
+        'preferredLanguage',
+        'privacyAccepted',
+        'createdAt',
+        'updatedAt'
+      ]) &&
+      data.keys().hasOnly([
+        'userId',
+        'persona',
+        'highContrast',
+        'dyslexiaFont',
+        'bionicReading',
+        'readingRuler',
+        'fontSize',
+        'lineSpacing',
+        'speechRate',
+        'preferredLanguage',
+        'privacyAccepted',
+        'createdAt',
+        'updatedAt'
+      ]) &&
+      data.userId is string &&
+      data.userId.size() >= 1 &&
+      data.userId.size() <= 128 &&
+      data.userId.matches('^[a-zA-Z0-9_\\-]+$') &&
+      data.userId == userId &&
+      data.userId == request.auth.uid &&
+      data.persona is string &&
+      data.persona.size() <= 32 &&
+      data.persona in ['standard', 'low-vision', 'focus-reading', 'audio-first'] &&
+      data.highContrast is bool &&
+      data.dyslexiaFont is bool &&
+      data.bionicReading is bool &&
+      data.readingRuler is bool &&
+      data.fontSize is number &&
+      data.fontSize >= 14 &&
+      data.fontSize <= 28 &&
+      data.lineSpacing is number &&
+      data.lineSpacing >= 1.2 &&
+      data.lineSpacing <= 2.6 &&
+      data.speechRate is number &&
+      data.speechRate >= 0.5 &&
+      data.speechRate <= 2.0 &&
+      data.preferredLanguage is string &&
+      data.preferredLanguage.size() <= 32 &&
+      data.preferredLanguage in ['academic-en', 'simple-en', 'te', 'hi'] &&
+      data.privacyAccepted is bool &&
+      data.createdAt is timestamp &&
+      data.updatedAt is timestamp &&
+      data.updatedAt == request.time;
+    }
+
+    // Validation Blueprint: ReadingProgress
+    function isValidReadingProgress(data, userId, documentId) {
+      return data.keys().hasAll([
+        'userId',
+        'documentId',
+        'activeSectionId',
+        'completedCheckpoints',
+        'createdAt',
+        'updatedAt'
+      ]) &&
+      data.keys().hasOnly([
+        'userId',
+        'documentId',
+        'activeSectionId',
+        'completedCheckpoints',
+        'createdAt',
+        'updatedAt'
+      ]) &&
+      data.userId is string &&
+      data.userId.size() >= 1 &&
+      data.userId.size() <= 128 &&
+      data.userId.matches('^[a-zA-Z0-9_\\-]+$') &&
+      data.userId == userId &&
+      data.userId == request.auth.uid &&
+      data.documentId is string &&
+      data.documentId.size() >= 1 &&
+      data.documentId.size() <= 128 &&
+      data.documentId.matches('^[a-zA-Z0-9_\\-]+$') &&
+      data.documentId == documentId &&
+      data.activeSectionId is string &&
+      data.activeSectionId.size() >= 1 &&
+      data.activeSectionId.size() <= 128 &&
+      data.activeSectionId.matches('^[a-zA-Z0-9_\\-]+$') &&
+      data.completedCheckpoints is list &&
+      data.completedCheckpoints.size() <= 50 &&
+      (data.completedCheckpoints.size() == 0 || (data.completedCheckpoints[0] is string && data.completedCheckpoints[0].size() <= 128)) &&
+      data.createdAt is timestamp &&
+      data.updatedAt is timestamp &&
+      data.updatedAt == request.time;
+    }
+
+    // Collection: /userPreferences/{userId}
+    match /userPreferences/{userId} {
+      allow get: if isOwner(userId) && isValidId(userId);
+      allow list: if false;
+
+      allow create: if isVerifiedOwner(userId) &&
+        isValidId(userId) &&
+        isValidUserPreference(incoming(), userId) &&
+        incoming().createdAt == request.time;
+
+      allow update: if isVerifiedOwner(userId) &&
+        isValidId(userId) &&
+        isValidUserPreference(incoming(), userId) &&
+        incoming().userId == existing().userId &&
+        incoming().createdAt == existing().createdAt &&
+        incoming().diff(existing()).affectedKeys().hasOnly([
+          'persona',
+          'highContrast',
+          'dyslexiaFont',
+          'bionicReading',
+          'readingRuler',
+          'fontSize',
+          'lineSpacing',
+          'speechRate',
+          'preferredLanguage',
+          'privacyAccepted',
+          'updatedAt'
+        ]);
+
+      allow delete: if isVerifiedOwner(userId) && isValidId(userId);
+
+      // Subcollection: /userPreferences/{userId}/readingProgress/{documentId}
+      match /readingProgress/{documentId} {
+        allow get: if isOwner(userId) &&
+          isValidId(userId) &&
+          isValidId(documentId) &&
+          get(/databases/$(database)/documents/userPreferences/$(userId)).data.userId == request.auth.uid;
+
+        allow list: if isOwner(userId) &&
+          existing().userId == request.auth.uid;
+
+        allow create: if isVerifiedOwner(userId) &&
+          isValidId(userId) &&
+          isValidId(documentId) &&
+          isValidReadingProgress(incoming(), userId, documentId) &&
+          incoming().createdAt == request.time &&
+          exists(/databases/$(database)/documents/userPreferences/$(userId)) &&
+          get(/databases/$(database)/documents/userPreferences/$(userId)).data.userId == request.auth.uid;
+
+        allow update: if isVerifiedOwner(userId) &&
+          isValidId(userId) &&
+          isValidId(documentId) &&
+          isValidReadingProgress(incoming(), userId, documentId) &&
+          incoming().userId == existing().userId &&
+          incoming().documentId == existing().documentId &&
+          incoming().createdAt == existing().createdAt &&
+          incoming().diff(existing()).affectedKeys().hasOnly([
+            'activeSectionId',
+            'completedCheckpoints',
+            'updatedAt'
+          ]) &&
+          exists(/databases/$(database)/documents/userPreferences/$(userId)) &&
+          get(/databases/$(database)/documents/userPreferences/$(userId)).data.userId == request.auth.uid;
+
+        allow delete: if isVerifiedOwner(userId) &&
+          isValidId(userId) &&
+          isValidId(documentId) &&
+          exists(/databases/$(database)/documents/userPreferences/$(userId)) &&
+          get(/databases/$(database)/documents/userPreferences/$(userId)).data.userId == request.auth.uid;
+      }
+    }
+  }
+}

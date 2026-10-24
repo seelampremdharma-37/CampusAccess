@@ -1,0 +1,6 @@
+{
+  "name": "CampusAccess — Accessible Learning Material Converter",
+  "description": "One document. Every learner. Convert textbooks, scanned notes, diagrams, formulas, and lectures into personalized, WCAG-compliant accessible reading experiences with Bionic Reading, Vision AI Diagram & Math Decoding, ADHD Micro-Learning, Multilingual Simplification, and Read-Aloud.",
+  "requestFramePermissions": ["microphone"],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}

@@ -1,0 +1,152 @@
+{
+  "entities": {
+    "UserPreference": {
+      "title": "UserPreference",
+      "description": "Stores accessibility persona and toolbar preferences for a specific user.",
+      "type": "object",
+      "properties": {
+        "userId": {
+          "type": "string",
+          "description": "UID of the authenticated user owning these preferences.",
+          "minLength": 1,
+          "maxLength": 128,
+          "pattern": "^[a-zA-Z0-9_\\-]+$"
+        },
+        "persona": {
+          "type": "string",
+          "description": "Active AccessPersona preset identifier.",
+          "enum": ["standard", "low-vision", "focus-reading", "audio-first"],
+          "maxLength": 32
+        },
+        "highContrast": {
+          "type": "boolean",
+          "description": "Whether High Contrast Mode is enabled."
+        },
+        "dyslexiaFont": {
+          "type": "boolean",
+          "description": "Whether Dyslexia-Friendly Font (Lexend / Atkinson Hyperlegible) is enabled."
+        },
+        "bionicReading": {
+          "type": "boolean",
+          "description": "Whether Bionic Reading Mode (bolding word prefixes) is enabled."
+        },
+        "readingRuler": {
+          "type": "boolean",
+          "description": "Whether the horizontal Reading Ruler follow bar is active."
+        },
+        "fontSize": {
+          "type": "number",
+          "description": "Base font size in pixels (14 to 28)."
+        },
+        "lineSpacing": {
+          "type": "number",
+          "description": "Line height multiplier (1.4 to 2.4)."
+        },
+        "speechRate": {
+          "type": "number",
+          "description": "Web Speech API synthesis rate (0.5 to 2.0)."
+        },
+        "preferredLanguage": {
+          "type": "string",
+          "description": "Selected language mode in Multilingual Simplifier.",
+          "enum": ["academic-en", "simple-en", "te", "hi"],
+          "maxLength": 32
+        },
+        "privacyAccepted": {
+          "type": "boolean",
+          "description": "Whether user has accepted the Privacy & Security Policy."
+        },
+        "createdAt": {
+          "type": "string",
+          "format": "date-time",
+          "description": "Server timestamp when preference record was created."
+        },
+        "updatedAt": {
+          "type": "string",
+          "format": "date-time",
+          "description": "Server timestamp when preference record was last updated."
+        }
+      },
+      "required": [
+        "userId",
+        "persona",
+        "highContrast",
+        "dyslexiaFont",
+        "bionicReading",
+        "readingRuler",
+        "fontSize",
+        "lineSpacing",
+        "speechRate",
+        "preferredLanguage",
+        "privacyAccepted",
+        "createdAt",
+        "updatedAt"
+      ]
+    },
+    "ReadingProgress": {
+      "title": "ReadingProgress",
+      "description": "Tracks user's reading progress, active document, active section, and completed checklist items.",
+      "type": "object",
+      "properties": {
+        "userId": {
+          "type": "string",
+          "description": "UID of the authenticated user.",
+          "minLength": 1,
+          "maxLength": 128,
+          "pattern": "^[a-zA-Z0-9_\\-]+$"
+        },
+        "documentId": {
+          "type": "string",
+          "description": "ID of the document being studied.",
+          "minLength": 1,
+          "maxLength": 128,
+          "pattern": "^[a-zA-Z0-9_\\-]+$"
+        },
+        "activeSectionId": {
+          "type": "string",
+          "description": "ID of the last selected chapter/section.",
+          "minLength": 1,
+          "maxLength": 128,
+          "pattern": "^[a-zA-Z0-9_\\-]+$"
+        },
+        "completedCheckpoints": {
+          "type": "array",
+          "description": "Bounded list of completed micro-learning checklist IDs (max 50).",
+          "maxLength": 50
+        },
+        "createdAt": {
+          "type": "string",
+          "format": "date-time",
+          "description": "Creation server timestamp."
+        },
+        "updatedAt": {
+          "type": "string",
+          "format": "date-time",
+          "description": "Last update server timestamp."
+        }
+      },
+      "required": [
+        "userId",
+        "documentId",
+        "activeSectionId",
+        "completedCheckpoints",
+        "createdAt",
+        "updatedAt"
+      ]
+    }
+  },
+  "firestore": {
+    "/userPreferences/{userId}": {
+      "schema": {
+        "$ref": "#/entities/UserPreference"
+      },
+      "description": "Stores accessibility preferences keyed by the authenticated user's UID."
+    },
+    "/userPreferences/{userId}/readingProgress/{documentId}": {
+      "schema": {
+        "$ref": "#/entities/ReadingProgress"
+      },
+      "description": "Subcollection storing reading progress per document under the parent userPreference."
+    }
+  }
+}
