@@ -34,7 +34,13 @@ CampusAccess converts **one document** into multiple personalized accessible for
 - **Auth & Cloud:** Firebase Auth (Google) + Firestore sync
 - **Accessibility:** Web Speech API, live toolbar presets
 
-## 🚀 Run Locally
+### Screenshots
+
+| Login Experience | Converter Workspace |
+|---|---|
+| ![Login Hero](docs/Screenshots/02-login-hero.png) | ![Workspace](docs/Screenshots/01-workspace-overview.png) |
+
+### 🚀 Run Locally
 ```bash
 npm install --legacy-peer-deps
 npm run dev
