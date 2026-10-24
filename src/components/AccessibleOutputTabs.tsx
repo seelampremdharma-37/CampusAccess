@@ -236,85 +236,59 @@ export const AccessibleOutputTabs: React.FC<AccessibleOutputTabsProps> = ({
       <div
         role="tablist"
         aria-label="AI Converted Accessible Output Modes"
-        className={`grid grid-cols-2 xl:grid-cols-4 gap-2 p-1.5 rounded-xl border ${
+        className={`grid grid-cols-2 xl:grid-cols-4 gap-1.5 p-1.5 rounded-2xl border ${
           hc ? 'bg-slate-900 border-slate-700' : 'bg-slate-100 border-slate-200'
         }`}
       >
-        <button
-          type="button"
-          role="tab"
-          aria-selected={activeTab === 'reader'}
-          onClick={() => setActiveTab('reader')}
-          className={`flex items-center justify-center gap-2 px-3 py-2.5 rounded-lg text-xs font-bold cursor-pointer whitespace-nowrap ${
-            activeTab === 'reader'
-              ? hc
-                ? 'bg-amber-400 text-slate-950'
-                : 'bg-teal-700 text-white shadow-xs'
-              : hc
-              ? 'text-slate-200 hover:bg-slate-800'
-              : 'text-slate-700 hover:bg-white/70'
-          }`}
-        >
-          <BookOpenCheck className="w-4 h-4 shrink-0" />
-          <span>1. Smart Reader</span>
-        </button>
-
-        <button
-          type="button"
-          role="tab"
-          aria-selected={activeTab === 'vision-math'}
-          onClick={() => setActiveTab('vision-math')}
-          className={`flex items-center justify-center gap-2 px-3 py-2.5 rounded-lg text-xs font-bold cursor-pointer whitespace-nowrap ${
-            activeTab === 'vision-math'
-              ? hc
-                ? 'bg-amber-400 text-slate-950'
-                : 'bg-teal-700 text-white shadow-xs'
-              : hc
-              ? 'text-slate-200 hover:bg-slate-800'
-              : 'text-slate-700 hover:bg-white/70'
-          }`}
-        >
-          <Eye className="w-4 h-4 shrink-0" />
-          <span>2. Vision & Math</span>
-        </button>
-
-        <button
-          type="button"
-          role="tab"
-          aria-selected={activeTab === 'adhd-mindmap'}
-          onClick={() => setActiveTab('adhd-mindmap')}
-          className={`flex items-center justify-center gap-2 px-3 py-2.5 rounded-lg text-xs font-bold cursor-pointer whitespace-nowrap ${
-            activeTab === 'adhd-mindmap'
-              ? hc
-                ? 'bg-amber-400 text-slate-950'
-                : 'bg-teal-700 text-white shadow-xs'
-              : hc
-              ? 'text-slate-200 hover:bg-slate-800'
-              : 'text-slate-700 hover:bg-white/70'
-          }`}
-        >
-          <BrainCircuit className="w-4 h-4 shrink-0" />
-          <span>3. ADHD & Mind Map</span>
-        </button>
-
-        <button
-          type="button"
-          role="tab"
-          aria-selected={activeTab === 'multilingual'}
-          onClick={() => setActiveTab('multilingual')}
-          className={`flex items-center justify-center gap-2 px-3 py-2.5 rounded-lg text-xs font-bold cursor-pointer whitespace-nowrap ${
-            activeTab === 'multilingual'
-              ? hc
-                ? 'bg-amber-400 text-slate-950'
-                : 'bg-teal-700 text-white shadow-xs'
-              : hc
-              ? 'text-slate-200 hover:bg-slate-800'
-              : 'text-slate-700 hover:bg-white/70'
-          }`}
-        >
-          <Languages className="w-4 h-4 shrink-0" />
-          <span>4. Multilingual</span>
-        </button>
+        {(
+          [
+            { id: 'reader', icon: BookOpenCheck, label: 'Smart Reader', sub: 'Bionic Read-Aloud' },
+            { id: 'vision-math', icon: Eye, label: 'Vision & Math', sub: 'Braille + Diagrams' },
+            { id: 'adhd-mindmap', icon: BrainCircuit, label: 'ADHD & Mind Map', sub: 'Flashcards' },
+            { id: 'multilingual', icon: Languages, label: 'Multilingual', sub: 'English · Telugu · Hindi' },
+          ] as { id: OutputTabId; icon: typeof BookOpenCheck; label: string; sub: string }[]
+        ).map(({ id, icon: Icon, label, sub }) => {
+          const active = activeTab === id;
+          return (
+            <button
+              key={id}
+              type="button"
+              role="tab"
+              aria-selected={active}
+              onClick={() => setActiveTab(id)}
+              className={`flex flex-col items-start px-3.5 py-2.5 rounded-xl cursor-pointer text-left border transition-all ${
+                active
+                  ? hc
+                    ? 'bg-amber-400 text-slate-950 border-amber-400 shadow-sm'
+                    : 'bg-white border-teal-600 shadow-sm'
+                  : hc
+                  ? 'bg-transparent border-transparent text-slate-300 hover:bg-slate-800'
+                  : 'bg-transparent border-transparent text-slate-500 hover:bg-white/70'
+              }`}
+            >
+              <span className="flex items-center gap-2 text-xs font-extrabold whitespace-nowrap">
+                <span
+                  className={`font-mono text-[10px] rounded px-1 py-0.5 ${
+                    active
+                      ? hc
+                        ? 'bg-slate-950/15'
+                        : 'bg-teal-700 text-white'
+                      : hc
+                      ? 'bg-slate-800 text-amber-400'
+                      : 'bg-slate-200 text-slate-600'
+                  }`}
+                >
+                  0{(id === 'reader' ? 1 : id === 'vision-math' ? 2 : id === 'adhd-mindmap' ? 3 : 4).toString()}
+                </span>
+                <Icon className={`w-4 h-4 shrink-0 ${active && !hc ? 'text-teal-700' : ''}`} />
+                {label}
+              </span>
+              <span className={`text-[10px] font-medium mt-0.5 ${active ? (hc ? 'opacity-80' : 'text-slate-500') : 'opacity-70'}`}>
+                {sub}
+              </span>
+            </button>
+          );
+        })}
       </div>
 
       {/* TAB 1: SMART ACCESSIBLE READER */}
@@ -480,9 +454,8 @@ export const AccessibleOutputTabs: React.FC<AccessibleOutputTabsProps> = ({
             <div className="flex flex-wrap items-center justify-between gap-2">
               <div className="flex items-center gap-2">
                 <Sparkles className={`w-4 h-4 ${hc ? 'text-amber-400' : 'text-violet-700'}`} />
-                <span className="text-xs font-bold">
-                  Explain-To-Me Study Actions (Server-Side AI + Verified Sample Fallback)
-                </span>
+                <span className="text-xs font-bold">AI Study Assist</span>
+                <span className="text-[10px] font-medium text-slate-400">one-click explanations with verified fallback</span>
               </div>
 
               <div className="flex flex-wrap items-center gap-2">
@@ -779,7 +752,7 @@ export const AccessibleOutputTabs: React.FC<AccessibleOutputTabsProps> = ({
                     onClick={() =>
                       setFlippedCards((prev) => ({ ...prev, [card.id]: !prev[card.id] }))
                     }
-                    className={`text-left p-4 rounded-xl border transition-all cursor-pointer flex flex-col justify-between min-h-[132px] ${
+                    className={`text-left p-4 rounded-2xl border transition-all cursor-pointer flex flex-col justify-between min-h-[136px] hover:-translate-y-0.5 hover:shadow-md ${
                       isFlipped
                         ? hc
                           ? 'bg-amber-400/15 border-amber-400 text-amber-200'

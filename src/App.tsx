@@ -718,18 +718,22 @@ export default function App() {
       {/* LIVE ACCESSIBILITY TOOLBAR & ACCESSPERSONA BAR */}
       <section
         aria-label="Live Accessibility Toolbar"
-        className={`border-b px-6 py-3 ${
+        className={`border-b px-6 py-2.5 ${
           hc
             ? 'bg-slate-900 border-amber-400/70 text-white'
             : 'bg-white border-slate-200 text-slate-800 shadow-2xs'
         }`}
       >
-        <div className="max-w-[1440px] mx-auto flex flex-wrap items-center justify-between gap-3">
+        <div className="max-w-[1440px] mx-auto flex flex-wrap items-center justify-between gap-x-4 gap-y-2">
           {/* Left: AccessPersona One-Click Presets */}
           <div className="flex flex-wrap items-center gap-1.5">
-            <span className="text-xs font-bold mr-1 flex items-center gap-1">
-              <Sliders className="w-3.5 h-3.5 text-teal-600" />
-              <span>AccessPersona:</span>
+            <span
+              className={`text-[11px] font-bold uppercase tracking-wider mr-1.5 flex items-center gap-1.5 ${
+                hc ? 'text-amber-300' : 'text-teal-700'
+              }`}
+            >
+              <Sliders className="w-3.5 h-3.5" />
+              <span>Persona</span>
             </span>
             {(
               [
@@ -744,6 +748,7 @@ export default function App() {
                 <button
                   key={preset.id}
                   type="button"
+                  aria-pressed={isActive}
                   onClick={() => {
                     const next = applyAccessPersonaPreset(
                       preset.id,
@@ -754,14 +759,14 @@ export default function App() {
                       handlePlaySpeech();
                     }
                   }}
-                  className={`px-3 py-1.5 rounded-lg text-xs font-bold cursor-pointer whitespace-nowrap ${
+                  className={`px-3 py-1.5 rounded-full text-xs font-bold cursor-pointer whitespace-nowrap border ${
                     isActive
                       ? hc
-                        ? 'bg-amber-400 text-slate-950'
-                        : 'bg-teal-700 text-white'
+                        ? 'bg-amber-400 text-slate-950 border-amber-400'
+                        : 'bg-teal-700 text-white border-teal-700 shadow-xs'
                       : hc
-                      ? 'bg-slate-800 text-slate-200 hover:bg-slate-700'
-                      : 'bg-slate-100 text-slate-700 hover:bg-slate-200'
+                      ? 'bg-slate-800 text-slate-200 border-slate-700 hover:bg-slate-700'
+                      : 'bg-white text-slate-600 border-slate-200 hover:border-teal-600 hover:text-teal-800'
                   }`}
                 >
                   {preset.label}
@@ -770,88 +775,63 @@ export default function App() {
             })}
           </div>
 
-          {/* Right: Individual Live Toggles (High Contrast, Dyslexia Font, Bionic Reading, Reading Ruler, Font Size) */}
-          <div className="flex flex-wrap items-center gap-2">
-            <button
-              type="button"
-              aria-pressed={preferences.highContrast}
-              onClick={() =>
-                updatePreferences({ highContrast: !preferences.highContrast })
-              }
-              className={`inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold border cursor-pointer whitespace-nowrap ${
-                preferences.highContrast
-                  ? 'bg-amber-400 text-slate-950 border-amber-400 font-bold'
-                  : 'bg-white text-slate-700 border-slate-300 hover:bg-slate-50'
-              }`}
-            >
-              <Contrast className="w-3.5 h-3.5" />
-              <span>High Contrast Mode</span>
-            </button>
-
-            <button
-              type="button"
-              aria-pressed={preferences.dyslexiaFont}
-              onClick={() =>
-                updatePreferences({ dyslexiaFont: !preferences.dyslexiaFont })
-              }
-              className={`inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold border cursor-pointer whitespace-nowrap ${
-                preferences.dyslexiaFont
-                  ? hc
-                    ? 'bg-amber-400 text-slate-950 border-amber-400 font-bold'
-                    : 'bg-violet-700 text-white border-violet-700'
-                  : hc
-                  ? 'bg-slate-800 text-slate-200 border-slate-700'
-                  : 'bg-white text-slate-700 border-slate-300 hover:bg-slate-50'
-              }`}
-            >
-              <TypeIcon className="w-3.5 h-3.5" />
-              <span>Dyslexia-Friendly Font</span>
-            </button>
-
-            <button
-              type="button"
-              aria-pressed={preferences.bionicReading}
-              onClick={() =>
-                updatePreferences({ bionicReading: !preferences.bionicReading })
-              }
-              className={`inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold border cursor-pointer whitespace-nowrap ${
-                preferences.bionicReading
-                  ? hc
-                    ? 'bg-amber-400 text-slate-950 border-amber-400 font-bold'
-                    : 'bg-teal-700 text-white border-teal-700'
-                  : hc
-                  ? 'bg-slate-800 text-slate-200 border-slate-700'
-                  : 'bg-white text-slate-700 border-slate-300 hover:bg-slate-50'
-              }`}
-            >
-              <Bold className="w-3.5 h-3.5" />
-              <span>Bionic Reading Mode</span>
-            </button>
-
-            <button
-              type="button"
-              aria-pressed={preferences.readingRuler}
-              onClick={() =>
-                updatePreferences({ readingRuler: !preferences.readingRuler })
-              }
-              className={`inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold border cursor-pointer whitespace-nowrap ${
-                preferences.readingRuler
-                  ? hc
-                    ? 'bg-amber-400 text-slate-950 border-amber-400 font-bold'
-                    : 'bg-amber-500 text-slate-950 border-amber-500 font-bold'
-                  : hc
-                  ? 'bg-slate-800 text-slate-200 border-slate-700'
-                  : 'bg-white text-slate-700 border-slate-300 hover:bg-slate-50'
-              }`}
-            >
-              <AlignJustify className="w-3.5 h-3.5" />
-              <span>Reading Ruler Follow</span>
-            </button>
+          {/* Right: Individual Live Toggles */}
+          <div className="flex flex-wrap items-center gap-1.5">
+            {(
+              [
+                {
+                  key: 'highContrast',
+                  label: 'High Contrast',
+                  Icon: Contrast,
+                  on: hc ? 'bg-amber-400 text-slate-950 border-amber-400' : 'bg-violet-700 text-white border-violet-700',
+                },
+                {
+                  key: 'dyslexiaFont',
+                  label: 'Dyslexia Font',
+                  Icon: TypeIcon,
+                  on: hc ? 'bg-amber-400 text-slate-950 border-amber-400' : 'bg-teal-700 text-white border-teal-700',
+                },
+                {
+                  key: 'bionicReading',
+                  label: 'Bionic Reading',
+                  Icon: Bold,
+                  on: hc ? 'bg-amber-400 text-slate-950 border-amber-400' : 'bg-amber-500 text-slate-950 border-amber-500',
+                },
+                {
+                  key: 'readingRuler',
+                  label: 'Reading Ruler',
+                  Icon: AlignJustify,
+                  on: hc ? 'bg-amber-400 text-slate-950 border-amber-400' : 'bg-slate-700 text-white border-slate-700',
+                },
+              ] as const
+            ).map(({ key, label, Icon, on }) => {
+              const active = Boolean(preferences[key]);
+              return (
+                <button
+                  key={key}
+                  type="button"
+                  aria-pressed={active}
+                  onClick={() =>
+                    updatePreferences({ [key]: !preferences[key] } as Partial<AccessibilityPreferences>)
+                  }
+                  className={`inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-semibold border cursor-pointer whitespace-nowrap ${
+                    active
+                      ? on
+                      : hc
+                      ? 'bg-slate-800 text-slate-200 border-slate-700 hover:bg-slate-700'
+                      : 'bg-white text-slate-600 border-slate-200 hover:border-slate-400'
+                  }`}
+                >
+                  <Icon className="w-3.5 h-3.5" />
+                  <span>{label}</span>
+                </button>
+              );
+            })}
 
             {/* Font Size Adjuster */}
             <div
-              className={`inline-flex items-center gap-1 px-2 py-1 rounded-lg border text-xs font-semibold ${
-                hc ? 'bg-slate-800 border-slate-700' : 'bg-slate-100 border-slate-200'
+              className={`inline-flex items-center gap-0.5 px-1 py-1 rounded-full border text-xs font-semibold ${
+                hc ? 'bg-slate-800 border-slate-700' : 'bg-slate-50 border-slate-200'
               }`}
             >
               <button
@@ -862,11 +842,11 @@ export default function App() {
                     fontSize: Math.max(14, preferences.fontSize - 2),
                   })
                 }
-                className="px-2 py-0.5 rounded hover:bg-slate-300/50 font-bold cursor-pointer"
+                className="px-2 py-0.5 rounded-full hover:bg-slate-300/40 font-bold cursor-pointer"
               >
-                A-
+                A−
               </button>
-              <span className="font-mono tabular-nums px-1">
+              <span className="font-mono tabular-nums px-1 min-w-[44px] text-center">
                 {preferences.fontSize}px
               </span>
               <button
@@ -877,7 +857,7 @@ export default function App() {
                     fontSize: Math.min(28, preferences.fontSize + 2),
                   })
                 }
-                className="px-2 py-0.5 rounded hover:bg-slate-300/50 font-bold cursor-pointer"
+                className="px-2 py-0.5 rounded-full hover:bg-slate-300/40 font-bold cursor-pointer"
               >
                 A+
               </button>
@@ -892,10 +872,10 @@ export default function App() {
                   applyAccessPersonaPreset('standard', preferences.privacyAccepted)
                 )
               }
-              className={`inline-flex items-center gap-1 px-2.5 py-1.5 rounded-lg text-xs font-semibold border cursor-pointer ${
+              className={`inline-flex items-center gap-1 px-2.5 py-1.5 rounded-full text-xs font-semibold border cursor-pointer ${
                 hc
                   ? 'bg-slate-800 border-slate-700 text-slate-300'
-                  : 'bg-white border-slate-300 text-slate-600 hover:bg-slate-100'
+                  : 'bg-white border-slate-200 text-slate-500 hover:border-slate-400 hover:text-slate-700'
               }`}
             >
               <RotateCcw className="w-3.5 h-3.5" />
@@ -907,48 +887,93 @@ export default function App() {
 
       {/* MAIN CONTENT CONTAINER */}
       <main id="top" className="flex-1 max-w-[1440px] w-full mx-auto px-4 sm:px-6 py-4 space-y-4">
-        {/* HERO BANNER + 3-MINUTE COMPETITION DEMO CONTROLLER */}
+        {/* HERO BANNER */}
         <section
-          className={`rounded-2xl border px-5 py-3.5 flex flex-col lg:flex-row items-start lg:items-center justify-between gap-4 ${
+          className={`relative rounded-3xl border overflow-hidden flex flex-col lg:flex-row items-stretch justify-between gap-2 ${
             hc
               ? 'bg-slate-900 border-amber-400 text-white'
-              : 'bg-gradient-to-r from-slate-900 via-slate-900 to-teal-950 text-white border-slate-800 shadow-sm'
+              : 'border-slate-800 shadow-md text-white bg-slate-900'
           }`}
         >
-          <div className="space-y-1 max-w-2xl">
-            <div className="text-[11px] font-semibold text-teal-300 tracking-wide">
-              Innovators Conclave 2026 · Problem ID: IC26-02-05 · EdTech & AI/ML
+          {!hc && (
+            <div
+              aria-hidden="true"
+              className="pointer-events-none absolute"
+              style={{
+                inset: 0,
+                background:
+                  'radial-gradient(ellipse 60% 120% at 8% 0%, rgba(245,158,11,0.13), transparent 55%), radial-gradient(ellipse 55% 110% at 55% 120%, rgba(45,212,191,0.12), transparent 55%)',
+              }}
+            />
+          )}
+          <div
+            aria-hidden="true"
+            className={`pointer-events-none relative font-mono select-none hidden xl:block leading-none shrink-0 my-auto ${hc ? 'text-amber-400/10' : 'text-white/[0.07]'}`}
+            style={{ fontSize: 72, paddingLeft: 4 }}
+          >
+            ⠅⠁⠍⠏
+          </div>
+          <div className="relative space-y-1.5 max-w-2xl px-5 lg:px-1 py-4">
+            <div className="flex items-center gap-2.5 mb-1">
+              <span className="text-[11px] font-bold text-amber-400 tracking-wide rounded-full border border-amber-400/40 bg-amber-400/10 px-2.5 py-1">
+                IC26-02-05 · EdTech &amp; AI/ML
+              </span>
+              <span className="text-[11px] font-semibold text-teal-300/90 tracking-wide">
+                Innovators Conclave 2026
+              </span>
             </div>
-            <h1 className="text-xl sm:text-2xl font-extrabold tracking-tight">
-              CampusAccess: One document. Every learner.
+            <h1 className="text-2xl sm:text-[27px] font-extrabold tracking-tight leading-tight">
+              CampusAccess: One document.{' '}
+              <span
+                style={{
+                  background: 'linear-gradient(90deg, #FBBF24, #F59E0B 60%, #2DD4BF)',
+                  WebkitBackgroundClip: 'text',
+                  WebkitTextFillColor: 'transparent',
+                }}
+              >
+                Every learner.
+              </span>
             </h1>
-            <p className="text-xs text-slate-300 leading-relaxed">
-              Convert textbooks, scanned notes, diagrams, and lectures into personalized <strong>Bionic Reading</strong>, <strong>Vision AI Diagram & Math Braille (.BRF)</strong>, <strong>ADHD Flashcards</strong>, and <strong>Multilingual Simplification</strong>.
+            <p className="text-[13px] text-slate-300/95 leading-relaxed max-w-xl">
+              Turn dense textbooks, scans, and lectures into{' '}
+              <strong className="text-amber-300">Bionic Reading</strong>,{' '}
+              <strong className="text-teal-300">Braille (.BRF)</strong>,{' '}
+              <strong className="text-teal-300">ADHD Flashcards</strong>, and{' '}
+              <strong className="text-teal-300">multilingual</strong> study modes — with verifiable
+              sources for every converted paragraph.
             </p>
           </div>
 
-          {/* Interactive 3-Minute Competition Demo Quick-Steps */}
-          <div className="w-full lg:w-auto bg-slate-950/80 border border-slate-800 rounded-xl p-3 space-y-2 shrink-0">
-            <div className="text-[11px] font-bold text-amber-400 flex items-center justify-between gap-4">
-              <span>3-Minute Competition Demo Flow</span>
+          {/* 3-Minute Demo Quick-Steps */}
+          <div
+            className={`relative w-full lg:w-auto lg:max-w-[420px] rounded-2xl border p-3.5 space-y-2.5 shrink-0 m-3 lg:m-4 ${
+              hc ? 'bg-slate-950/80 border-slate-700' : 'bg-white/[0.045] border-white/10 backdrop-blur'
+            }`}
+          >
+            <div className="flex items-center justify-between gap-4">
+              <span className="text-[11px] font-extrabold text-amber-400 tracking-wide">
+                3-Minute Demo Flow
+              </span>
               <span className="font-mono text-[10px] text-slate-400">
-                Upload → Extract → Navigate → Personalize → Listen → Verify
+                Upload → Personalize → Verify
               </span>
             </div>
-            <div className="flex flex-wrap gap-1.5">
+            <div className="grid grid-cols-2 gap-1.5">
               <button
                 type="button"
                 onClick={() => handleSelectMaterial('sample-physics', 'sec-1-1')}
-                className="px-2.5 py-1 rounded-lg text-xs font-semibold bg-slate-800 hover:bg-slate-700 text-white cursor-pointer"
+                className="px-3 py-2 rounded-xl text-[11px] font-semibold bg-white/[0.08] hover:bg-white/[0.14] text-white border border-white/10 cursor-pointer text-left leading-snug transition-colors"
               >
-                0:30 Open Sample Textbook
+                <span className="font-mono text-amber-400 mr-1.5 font-bold">0:30</span>
+                Open Sample Textbook
               </button>
               <button
                 type="button"
                 onClick={() => handleSelectSection('sec-3-2', false)}
-                className="px-2.5 py-1 rounded-lg text-xs font-semibold bg-violet-700 hover:bg-violet-600 text-white cursor-pointer"
+                className="px-3 py-2 rounded-xl text-[11px] font-semibold bg-white/[0.08] hover:bg-white/[0.14] text-white border border-white/10 cursor-pointer text-left leading-snug transition-colors"
               >
-                1:00 Jump to Ch 3, Sec 3.2
+                <span className="font-mono text-amber-400 mr-1.5 font-bold">1:00</span>
+                Jump to Ch 3, Sec 3.2
               </button>
               <button
                 type="button"
@@ -957,16 +982,18 @@ export default function App() {
                   updatePreferences(next);
                   handlePlaySpeech();
                 }}
-                className="px-2.5 py-1 rounded-lg text-xs font-semibold bg-teal-700 hover:bg-teal-600 text-white cursor-pointer"
+                className="px-3 py-2 rounded-xl text-[11px] font-semibold bg-white/[0.08] hover:bg-white/[0.14] text-white border border-white/10 cursor-pointer text-left leading-snug transition-colors"
               >
-                1:30 Low Vision + Read Aloud
+                <span className="font-mono text-amber-400 mr-1.5 font-bold">1:30</span>
+                Low Vision + Read Aloud
               </button>
               <button
                 type="button"
                 onClick={() => setSourceTraceModalSection(activeSection)}
-                className="px-2.5 py-1 rounded-lg text-xs font-semibold bg-amber-400 hover:bg-amber-300 text-slate-950 font-bold cursor-pointer"
+                className="px-3 py-2 rounded-xl text-[11px] font-bold bg-amber-400 hover:bg-amber-300 text-slate-950 cursor-pointer text-left leading-snug transition-colors"
               >
-                2:00 Verify SourceTrace
+                <span className="font-mono mr-1.5 font-bold">2:00</span>
+                Verify SourceTrace
               </button>
             </div>
           </div>

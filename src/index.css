@@ -6,6 +6,12 @@
     --font-display: 'Plus Jakarta Sans', -apple-system, BlinkMacSystemFont, sans-serif;
     --font-dyslexic: 'Lexend', 'Atkinson Hyperlegible', sans-serif;
     --font-mono: 'IBM Plex Mono', monospace;
+
+    /* CampusAccess design tokens */
+    --ca-ink: #0b0f1a;
+    --ca-amber: #f59e0b;
+    --ca-teal: #0f766e;
+    --ca-radius: 14px;
   }
 
   @media (max-width: 900px) and (orientation: portrait) {
@@ -22,6 +28,44 @@
 
   body {
     font-family: var(--font-display);
+    -webkit-font-smoothing: antialiased;
+    text-rendering: optimizeLegibility;
+  }
+
+  /* Branded selection */
+  ::selection {
+    background: rgba(245, 158, 11, 0.28);
+    color: inherit;
+  }
+
+  /* Slim, themed scrollbars */
+  * {
+    scrollbar-width: thin;
+    scrollbar-color: rgba(100, 116, 139, 0.45) transparent;
+  }
+  ::-webkit-scrollbar {
+    width: 9px;
+    height: 9px;
+  }
+  ::-webkit-scrollbar-track {
+    background: transparent;
+  }
+  ::-webkit-scrollbar-thumb {
+    background: rgba(100, 116, 139, 0.45);
+    border-radius: 999px;
+    border: 2px solid transparent;
+    background-clip: content-box;
+  }
+  ::-webkit-scrollbar-thumb:hover {
+    background: rgba(71, 85, 105, 0.7);
+    background-clip: content-box;
+  }
+
+  /* Visible, branded keyboard focus */
+  :where(button, [role="button"], a, input, textarea, select, label:has(input[type="checkbox"]), [tabindex]):focus-visible {
+    outline: 2px solid var(--ca-amber);
+    outline-offset: 2px;
+    border-radius: 6px;
   }
 
   /* Tactile button motion: subtle forward elevation & spring feedback on hover and press */
@@ -39,12 +83,22 @@
 
   button:not(:disabled):hover,
   [role="button"]:not(:disabled):hover {
-    transform: translateY(-2px) scale(1.015);
+    transform: translateY(-1.5px) scale(1.012);
   }
 
   button:not(:disabled):active,
   [role="button"]:not(:disabled):active {
-    transform: translateY(1px) scale(0.985);
+    transform: translateY(0.5px) scale(0.99);
+  }
+
+  /* Range inputs: branded accent */
+  input[type='range'] {
+    accent-color: var(--ca-amber);
+  }
+
+  /* Checkbox: branded accent */
+  input[type='checkbox'] {
+    accent-color: var(--ca-teal);
   }
 }
 

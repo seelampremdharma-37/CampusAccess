@@ -1,4 +1,4 @@
-import React, { useState, useRef, useEffect } from 'react';
+import React, { useState, useEffect } from 'react';
 import { signInWithGooglePopup, User } from '../firebase';
 
 export interface AuthenticatedSession {
@@ -17,82 +17,63 @@ interface CutoraLoginHeroProps {
 
 const SLIDES = [
   {
-    line1: 'Edit Smarter. Export Faster.',
-    line2: 'Create Anywhere.',
+    line1: 'One Document.',
+    line2: 'Every Learner.',
     subline:
-      'From quick social media clips to full-length videos, our powerful editor lets you work seamlessly across devices.',
+      'Turn dense textbooks, scanned notes, and diagrams into Bionic Reading, Braille (.BRF), flashcards, and multilingual explanations — personalized to how each student learns best.',
+    accent: 'Every Learner.',
   },
   {
-    line1: 'One Document. Every Learner.',
-    line2: 'Accessible by Design.',
+    line1: 'Read With Your Ears.',
+    line2: 'Skim With Your Eyes.',
     subline:
-      'Transform complex lectures, formulas, and diagrams into personalized audio, Braille, and Bionic reading workspaces.',
+      'Browser-based read-aloud at 0.5x–2x speed, bionic word-bolding that guides the eye, and a reading ruler that follows your focus. No installs needed.',
+    accent: 'Your Eyes.',
   },
   {
-    line1: 'Studio Precision. Instant Cloud.',
-    line2: 'Built for Creators.',
+    line1: 'Every Claim Checked.',
+    line2: 'Zero Hallucination.',
     subline:
-      'Seamless synchronization across campus devices with real-time AI vision decoding and multilingual clarity.',
+      'SourceTrace™ shows the exact extracted passage and PDF page behind every converted section — so students verify the content, not just trust the AI.',
+    accent: 'Zero Hallucination.',
   },
 ];
+
+const BIONIC_DEMO = tokenizeDemo();
+
+function tokenizeDemo() {
+  const sentence = 'Harmonic oscillations pull every system back toward balance.';
+  return sentence.split(' ').map((word) => {
+    const bold = Math.max(1, Math.ceil(word.length * 0.5));
+    return { prefix: word.slice(0, bold), suffix: word.slice(bold) };
+  });
+}
 
 export const CutoraLoginHero: React.FC<CutoraLoginHeroProps> = ({
   onLoginSuccess,
   onSkipToWorkspace,
 }) => {
-  const [email, setEmail] = useState('mana.prayaanaam@gmail.com');
-  const [password, setPassword] = useState('CampusAccess2026!');
+  const [email, setEmail] = useState('');
+  const [password, setPassword] = useState('');
   const [showPassword, setShowPassword] = useState(false);
-  const [rememberMe, setRememberMe] = useState(true);
   const [activeDot, setActiveDot] = useState(0);
-  const [isSignUpMode, setIsSignUpMode] = useState(false);
-  const [videoReady, setVideoReady] = useState(false);
-  const [videoCrossfade, setVideoCrossfade] = useState(false);
   const [formMessage, setFormMessage] = useState<{ type: 'error' | 'info'; text: string } | null>(
     null
   );
   const [isSubmitting, setIsSubmitting] = useState(false);
-  const videoRef = useRef<HTMLVideoElement | null>(null);
 
-  // Seamless 4s loop blend: gently crossfade the last 0.45s into the first frame so there is never a jump
+  // Auto-advance hero slides every 6s
   useEffect(() => {
-    const vid = videoRef.current;
-    if (!vid) return;
-
-    const handleTimeUpdate = () => {
-      if (vid.duration && vid.duration - vid.currentTime <= 0.35) {
-        setVideoCrossfade(true);
-      } else {
-        setVideoCrossfade(false);
-      }
-    };
-
-    vid.addEventListener('timeupdate', handleTimeUpdate);
-    return () => vid.removeEventListener('timeupdate', handleTimeUpdate);
+    const t = setInterval(() => setActiveDot((d) => (d + 1) % SLIDES.length), 6000);
+    return () => clearInterval(t);
   }, []);
 
   const handleFormSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     setFormMessage(null);
 
-    const trimmedEmail = email.trim();
-    const trimmedPass = password.trim();
-
-    if (!trimmedEmail || !trimmedEmail.includes('@')) {
-      setFormMessage({
-        type: 'error',
-        text: 'Please enter a valid email address (for example: name@campus.edu).',
-      });
-      return;
-    }
-
-    if (!trimmedPass || trimmedPass.length < 4) {
-      setFormMessage({
-        type: 'error',
-        text: 'Please enter your password (at least 4 characters).',
-      });
-      return;
-    }
+    // One-click demo entry: any credentials (or empty) enter demo workspace
+    const trimmedEmail = email.trim() || 'scholar@campus.edu';
 
     setIsSubmitting(true);
     const namePart = trimmedEmail.split('@')[0].replace(/[._-]/g, ' ');
@@ -118,8 +99,8 @@ export const CutoraLoginHero: React.FC<CutoraLoginHeroProps> = ({
       const fbUser: User = await signInWithGooglePopup();
       onLoginSuccess({
         uid: fbUser.uid,
-        email: fbUser.email || 'mana.prayaanaam@gmail.com',
-        displayName: fbUser.displayName || 'Google Verified Learner',
+        email: fbUser.email || 'scholar@campus.edu',
+        displayName: fbUser.displayName || 'Verified Campus Scholar',
         photoURL: fbUser.photoURL,
         authMethod: 'firebase-google',
         emailVerified: fbUser.emailVerified,
@@ -130,19 +111,18 @@ export const CutoraLoginHero: React.FC<CutoraLoginHeroProps> = ({
       if (msg.includes('popup-closed-by-user')) {
         setFormMessage({
           type: 'info',
-          text: 'Google sign-in popup was closed. You can try again or click Login above.',
+          text: 'Google sign-in was closed. Try again, or use the demo button.',
         });
       } else {
-        // If popup is blocked in an embedded preview iframe, inform clearly and offer 1-click continue
         setFormMessage({
           type: 'info',
-          text: 'Google OAuth popup was blocked by browser preview settings. Signing in with verified session...',
+          text: 'Google OAuth unavailable here. Entering with a demo session...',
         });
         setTimeout(() => {
           onLoginSuccess({
             uid: 'google_verified_scholar',
-            email: email.trim() || 'mana.prayaanaam@gmail.com',
-            displayName: 'Mana Prayaanaam',
+            email: email.trim() || 'scholar@campus.edu',
+            displayName: 'Campus Scholar',
             authMethod: 'cutora-credentials',
             emailVerified: false,
           });
@@ -151,110 +131,77 @@ export const CutoraLoginHero: React.FC<CutoraLoginHeroProps> = ({
     }
   };
 
-  const currentSlide = SLIDES[activeDot] || SLIDES[0];
+  const current = SLIDES[activeDot] || SLIDES[0];
 
   return (
     <div
-      className="relative w-screen h-dvh overflow-hidden select-none bg-[#120d08] flex flex-col lg:flex-row items-stretch justify-between"
-      style={{
-        fontFamily: "'Plus Jakarta Sans', sans-serif",
-      }}
+      className="relative w-screen min-h-dvh overflow-hidden select-none bg-[#0B0F1A] flex flex-col lg:flex-row items-stretch"
+      style={{ fontFamily: "'Plus Jakarta Sans', -apple-system, sans-serif" }}
     >
-      {/* Background Plate Image (2048x1360, 3:2) */}
-      <div
-        className="absolute inset-0 bg-cover bg-center pointer-events-none"
-        style={{
-          backgroundImage: `url('https://d2ol7oe51mr4n9.cloudfront.net/user_38xzZboKViGWJOttwIXH07lWA1P/e781b542-a83d-4cf2-a66a-44085485865d.jpg'), radial-gradient(circle at 22% 72%, #f59a08 0%, #5b3310 42%, #0e1726 100%)`,
-        }}
-        aria-hidden="true"
-      />
+      {/* Ambient background: layered gradients (pure CSS, no external assets) */}
+      <div className="absolute inset-0 pointer-events-none" aria-hidden="true">
+        <div
+          className="absolute inset-0"
+          style={{
+            background:
+              'radial-gradient(ellipse 80% 60% at 15% 85%, rgba(245,158,11,0.16), transparent 60%),' +
+              'radial-gradient(ellipse 70% 55% at 85% 15%, rgba(45,212,191,0.13), transparent 55%),' +
+              'radial-gradient(ellipse 50% 40% at 60% 90%, rgba(139,92,246,0.10), transparent 60%)',
+          }}
+        />
+        {/* faint grid */}
+        <div
+          className="absolute inset-0 opacity-[0.05]"
+          style={{
+            backgroundImage:
+              'linear-gradient(rgba(255,255,255,0.6) 1px, transparent 1px), linear-gradient(90deg, rgba(255,255,255,0.6) 1px, transparent 1px)',
+            backgroundSize: '56px 56px',
+            maskImage: 'radial-gradient(ellipse 70% 60% at 30% 40%, black, transparent)',
+          }}
+        />
+        {/* decorative floating braille glyphs */}
+        <div
+          className="absolute font-mono text-white/[0.06] leading-none pointer-events-none"
+          style={{ fontSize: 'min(220px, 22vw)', top: '6%', left: '40%' }}
+        >
+          ⠑⠁⠧
+        </div>
+        <div
+          className="absolute font-mono text-white/[0.05] leading-none pointer-events-none"
+          style={{ fontSize: 'min(150px, 14vw)', bottom: '12%', left: '4%' }}
+        >
+          ⠇⠑⠁⠗⠝
+        </div>
+      </div>
 
-      {/* Muted 4s Video Loop covering the plate with 0.8s fade-in and seamless loop blend */}
-      <video
-        ref={videoRef}
-        src="https://d2ol7oe51mr4n9.cloudfront.net/user_38xzZboKViGWJOttwIXH07lWA1P/197f7e27-faac-4bdc-916c-615ac962bf86.mp4"
-        muted
-        loop
-        playsInline
-        autoPlay
-        onLoadedData={() => setVideoReady(true)}
-        className="absolute inset-0 w-full h-full object-cover object-center pointer-events-none"
-        style={{
-          opacity: videoReady ? (videoCrossfade ? 0.86 : 1) : 0,
-          transition: 'opacity 0.8s ease-out',
-        }}
-        aria-hidden="true"
-      />
-
-      {/* Readability Soft Washes: 150u from left, 140u from top, warm 420u from bottom */}
-      <div
-        className="absolute inset-y-0 left-0 pointer-events-none"
-        style={{
-          width: 'calc(150 * var(--u))',
-          background: 'linear-gradient(to right, rgba(0,0,0,0.46), transparent)',
-        }}
-        aria-hidden="true"
-      />
-      <div
-        className="absolute inset-x-0 top-0 pointer-events-none"
-        style={{
-          height: 'calc(140 * var(--u))',
-          background: 'linear-gradient(to bottom, rgba(0,0,0,0.44), transparent)',
-        }}
-        aria-hidden="true"
-      />
-      <div
-        className="absolute inset-x-0 bottom-0 pointer-events-none"
-        style={{
-          height: 'calc(420 * var(--u))',
-          background: 'linear-gradient(to top, rgba(20,10,0,0.52), rgba(20,10,0,0.22) 55%, transparent)',
-        }}
-        aria-hidden="true"
-      />
-
-      {/* Left Column: Hero Pitch & Top Bar */}
-      <div
-        className="relative z-10 flex-1 flex flex-col justify-between text-white px-6 py-5 lg:p-0"
-        style={{
-          paddingTop: 'calc(57 * var(--u))',
-          paddingLeft: 'calc(92.5 * var(--u))',
-          paddingRight: 'calc(48 * var(--u))',
-          paddingBottom: 'calc(54 * var(--u))',
-        }}
-      >
-        {/* Top Bar: Cutora Logo + Back to Website Link */}
-        <div className="flex items-center justify-between gap-4 cutora-fade-up" style={{ animationDelay: '0.08s' }}>
-          <div className="flex items-center" style={{ gap: 'calc(14 * var(--u))' }}>
+      {/* ===== LEFT: Hero ===== */}
+      <div className="relative z-10 flex-1 flex flex-col justify-between px-7 sm:px-12 lg:px-16 py-10">
+        {/* Brand */}
+        <div className="flex items-center justify-between cutora-fade-up" style={{ animationDelay: '0.05s' }}>
+          <div className="flex items-center gap-3">
             <div
-              className="flex items-center justify-center bg-[#000000] shadow-lg shrink-0"
+              className="flex items-center justify-center rounded-2xl shadow-lg"
               style={{
-                width: 'calc(48 * var(--u))',
-                height: 'calc(48 * var(--u))',
-                borderRadius: 'calc(12 * var(--u))',
+                width: 46,
+                height: 46,
+                background: 'linear-gradient(135deg, #FBBF24 0%, #F59E0B 60%, #D97706 100%)',
+                boxShadow: '0 8px 24px rgba(245,158,11,0.35)',
               }}
             >
-              <span
-                className="font-extrabold leading-none select-none"
-                style={{
-                  fontSize: 'calc(29 * var(--u))',
-                  background: 'linear-gradient(180deg, #FFC233 0%, #F58A07 100%)',
-                  WebkitBackgroundClip: 'text',
-                  WebkitTextFillColor: 'transparent',
-                }}
-              >
-                C
+              {/* graduation-cap mark */}
+              <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#0B0F1A" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
+                <path d="M22 10 12 5 2 10l10 5 10-5z" fill="#0B0F1A" />
+                <path d="M6 12.5V17c0 1.5 2.7 3 6 3s6-1.5 6-3v-4.5" />
+              </svg>
+            </div>
+            <div className="leading-tight">
+              <span className="block text-white font-extrabold text-xl tracking-tight">
+                Campus<span className="text-amber-400">Access</span>
+              </span>
+              <span className="block text-white/50 text-[11px] font-semibold tracking-widest uppercase">
+                Accessible Learning Converter
               </span>
             </div>
-            <span
-              className="text-white font-bold"
-              style={{
-                fontSize: 'calc(35.5 * var(--u))',
-                fontWeight: 680,
-                letterSpacing: 'calc(-0.95 * var(--u))',
-              }}
-            >
-              Cutora
-            </span>
           </div>
 
           <button
@@ -265,143 +212,150 @@ export const CutoraLoginHero: React.FC<CutoraLoginHeroProps> = ({
               } else {
                 setFormMessage({
                   type: 'info',
-                  text: 'Please complete sign-in on the right card to launch the CampusAccess workspace.',
+                  text: 'Use the demo button on the right to jump straight into the workspace.',
                 });
               }
             }}
-            className="text-[#FBAE05] hover:underline cursor-pointer bg-transparent border-0 whitespace-nowrap"
-            style={{
-              fontSize: 'calc(17.4 * var(--u))',
-              fontWeight: 520,
-            }}
+            className="group hidden sm:inline-flex items-center gap-1.5 text-white/70 hover:text-white bg-white/[0.06] hover:bg-white/[0.12] border border-white/10 rounded-full px-4 py-2 text-xs font-semibold cursor-pointer transition-colors"
           >
-            ← Back to Website
+            Live Demo
+            <span className="inline-block transition-transform group-hover:translate-x-0.5">→</span>
           </button>
         </div>
 
-        {/* Bottom-Left Pitch Headline, Subline, and Interactive Slider Dots */}
-        <div className="mt-auto pt-4 lg:pt-0">
+        {/* Headline block */}
+        <div className="mt-10 lg:mt-0 max-w-2xl">
+          {/* Bionic reading live demo chip */}
+          <div
+            className="inline-flex flex-col gap-1.5 mb-6 cutora-fade-up"
+            style={{ animationDelay: '0.15s' }}
+          >
+            <span className="text-[10px] font-bold uppercase tracking-[0.18em] text-teal-300/80">
+              Bionic Reading · Live Sample
+            </span>
+            <div className="inline-flex flex-wrap items-baseline gap-x-[3px] gap-y-1 rounded-xl border border-white/10 bg-white/[0.05] backdrop-blur px-4 py-2.5 text-[13px] sm:text-sm text-white/90">
+              {BIONIC_DEMO.map((t, i) => (
+                <span key={i}>
+                  <strong className="font-extrabold text-amber-300">{t.prefix}</strong>
+                  <span className="text-white/60">{t.suffix}</span>{' '}
+                </span>
+              ))}
+            </div>
+          </div>
+
           <h1
-            className="text-white font-semibold m-0"
+            className="text-white font-bold m-0"
             style={{
-              fontSize: 'calc(62 * var(--u))',
-              lineHeight: 'calc(70 * var(--u))',
-              letterSpacing: 'calc(-2.6 * var(--u))',
-              fontWeight: 600,
+              fontSize: 'clamp(2.4rem, 5.2vw, 4.2rem)',
+              lineHeight: 1.06,
+              letterSpacing: '-0.03em',
             }}
           >
             <span className="overflow-hidden block">
-              <span className="cutora-wipe-line" style={{ animationDelay: '0.18s' }}>
-                {currentSlide.line1}
+              <span className="cutora-wipe-line" style={{ animationDelay: '0.2s' }}>
+                {current.line1}
               </span>
             </span>
             <span className="overflow-hidden block">
-              <span className="cutora-wipe-line" style={{ animationDelay: '0.28s' }}>
-                {currentSlide.line2}
+              <span
+                className="cutora-wipe-line"
+                style={{
+                  animationDelay: '0.3s',
+                  background: 'linear-gradient(90deg, #FBBF24, #F59E0B 55%, #2DD4BF)',
+                  WebkitBackgroundClip: 'text',
+                  WebkitTextFillColor: 'transparent',
+                }}
+              >
+                {current.line2}
               </span>
             </span>
           </h1>
 
           <p
-            className="text-white/95 hidden sm:block max-w-2xl cutora-fade-up"
-            style={{
-              marginTop: 'calc(19 * var(--u))',
-              fontSize: 'calc(20 * var(--u))',
-              lineHeight: 'calc(27.5 * var(--u))',
-              fontWeight: 460,
-              animationDelay: '0.4s',
-            }}
+            key={activeDot}
+            className="text-white/70 mt-5 max-w-xl text-[15px] sm:text-base leading-relaxed cutora-fade-up"
+            style={{ animationDelay: '0.4s' }}
           >
-            {currentSlide.subline}
+            {current.subline}
           </p>
 
-          {/* Slider Dots: 1 amber 34.5x9u pill + two 9u white dots at 55%, 9u apart */}
-          <div
-            className="flex items-center cutora-fade-up"
-            style={{
-              marginTop: 'calc(35.5 * var(--u))',
-              gap: 'calc(9 * var(--u))',
-              animationDelay: '0.5s',
-            }}
-            role="tablist"
-            aria-label="Hero showcase slides"
-          >
-            {[0, 1, 2].map((index) => {
-              const isActive = activeDot === index;
-              return (
-                <button
-                  key={index}
-                  type="button"
-                  role="tab"
-                  aria-selected={isActive}
-                  aria-label={`Slide ${index + 1}`}
-                  onClick={() => setActiveDot(index)}
-                  className="cursor-pointer border-0 p-0 transition-all duration-300"
-                  style={{
-                    width: isActive ? 'calc(34.5 * var(--u))' : 'calc(9 * var(--u))',
-                    height: 'calc(9 * var(--u))',
-                    borderRadius: '9999px',
-                    backgroundColor: isActive ? '#F59A08' : 'rgba(255, 255, 255, 0.55)',
-                  }}
-                />
-              );
-            })}
+          {/* trust row */}
+          <div className="flex flex-wrap items-center gap-2 mt-7 cutora-fade-up" style={{ animationDelay: '0.5s' }}>
+            {['Bionic Reading', 'Braille .BRF', 'ADHD Flashcards', 'Read-Aloud', 'SourceTrace™'].map(
+              (chip) => (
+                <span
+                  key={chip}
+                  className="text-[11px] font-semibold text-white/80 border border-white/15 bg-white/[0.05] rounded-full px-3 py-1.5"
+                >
+                  {chip}
+                </span>
+              )
+            )}
           </div>
+
+          {/* dots */}
+          <div className="flex items-center gap-2 mt-8" role="tablist" aria-label="Hero slides">
+            {SLIDES.map((_, i) => (
+              <button
+                key={i}
+                type="button"
+                role="tab"
+                aria-selected={activeDot === i}
+                aria-label={`Slide ${i + 1}`}
+                onClick={() => setActiveDot(i)}
+                className="cursor-pointer border-0 p-0 transition-all duration-300"
+                style={{
+                  width: activeDot === i ? 30 : 9,
+                  height: 9,
+                  borderRadius: 999,
+                  backgroundColor: activeDot === i ? '#F59E0B' : 'rgba(255,255,255,0.3)',
+                }}
+              />
+            ))}
+          </div>
+        </div>
+
+        {/* bottom stats strip */}
+        <div
+          className="hidden md:flex items-center gap-8 mt-10 cutora-fade-up"
+          style={{ animationDelay: '0.6s' }}
+        >
+          {[
+            ['4', 'Accessible Output Modes'],
+            ['3', 'Languages + Simplified English'],
+            ['100%', 'AI-Offline Capable (Bundled Fallbacks)'],
+          ].map(([num, label]) => (
+            <div key={label} className="flex items-baseline gap-2">
+              <span className="text-2xl font-extrabold text-amber-400">{num}</span>
+              <span className="text-[11px] text-white/55 font-medium leading-tight max-w-[140px]">{label}</span>
+            </div>
+          ))}
         </div>
       </div>
 
-      {/* Right Column: White Log-in Card */}
-      <div
-        className="relative z-10 bg-[#FEFEFE] text-[#000000] flex flex-col justify-center shadow-2xl cutora-card-rise shrink-0 mx-3 mb-3 lg:mx-0"
-        style={{
-          width: 'min(calc(100vw - 24px), calc(742.4 * var(--u)))',
-          marginTop: 'calc(18 * var(--u))',
-          marginRight: 'calc(18 * var(--u))',
-          marginBottom: 'calc(22.5 * var(--u))',
-          borderRadius: 'calc(20 * var(--u))',
-          paddingTop: 'calc(32 * var(--u))',
-          paddingBottom: 'calc(32 * var(--u))',
-          animationDelay: '0.12s',
-        }}
-      >
+      {/* ===== RIGHT: Login card ===== */}
+      <div className="relative z-10 flex items-center justify-center px-5 pb-10 lg:py-12 lg:pr-14">
         <div
-          className="w-full mx-auto px-6 lg:px-0"
+          className="w-full cutora-card-rise"
           style={{
-            maxWidth: 'calc(559 * var(--u))',
+            maxWidth: 430,
+            background: 'rgba(255,255,255,0.97)',
+            borderRadius: 24,
+            boxShadow: '0 30px 80px rgba(0,0,0,0.5), 0 1px 0 rgba(255,255,255,0.6) inset',
+            padding: '36px 34px',
           }}
         >
-          {/* Card Heading */}
-          <h2
-            className="text-[#000000] m-0 cutora-fade-up"
-            style={{
-              fontSize: 'calc(50.6 * var(--u))',
-              fontWeight: 660,
-              letterSpacing: 'calc(-1.9 * var(--u))',
-              lineHeight: 1.12,
-              animationDelay: '0.25s',
-            }}
-          >
-            {isSignUpMode ? 'Create Account' : 'Welcome Back!'}
+          <h2 className="text-slate-900 m-0" style={{ fontSize: 28, fontWeight: 750, letterSpacing: '-0.02em' }}>
+            Enter the Workspace
           </h2>
-
-          <p
-            className="text-[#5F636B] cutora-fade-up"
-            style={{
-              marginTop: 'calc(10 * var(--u))',
-              fontSize: 'calc(19 * var(--u))',
-              fontWeight: 450,
-              animationDelay: '0.32s',
-            }}
-          >
-            {isSignUpMode
-              ? 'Sign up to access Cutora Studio & CampusAccess learning suite.'
-              : 'Log in to start creating stunning videos with ease.'}
+          <p className="text-slate-500 mt-1.5 text-sm">
+            Sign in to your personalized accessibility profile.
           </p>
 
           {formMessage && (
             <div
               role="alert"
-              className={`mt-3 px-3.5 py-2.5 rounded-lg text-xs font-medium ${
+              className={`mt-4 px-3.5 py-2.5 rounded-xl text-xs font-medium ${
                 formMessage.type === 'error'
                   ? 'bg-red-50 text-red-700 border border-red-200'
                   : 'bg-amber-50 text-amber-900 border border-amber-200'
@@ -411,266 +365,82 @@ export const CutoraLoginHero: React.FC<CutoraLoginHeroProps> = ({
             </div>
           )}
 
-          {/* Login Form */}
-          <form onSubmit={handleFormSubmit} noValidate>
-            {/* Email Field */}
-            <div
-              className="cutora-fade-up"
-              style={{
-                marginTop: 'calc(32 * var(--u))',
-                animationDelay: '0.38s',
-              }}
-            >
-              <label
-                htmlFor="cutora-email-input"
-                className="block text-[#000000]"
-                style={{
-                  fontSize: 'calc(17.4 * var(--u))',
-                  fontWeight: 560,
-                  marginBottom: 'calc(10 * var(--u))',
-                }}
-              >
-                Email
-              </label>
+          <form onSubmit={handleFormSubmit} noValidate className="mt-6">
+            <label htmlFor="cutora-email-input" className="block text-slate-800 text-[13px] font-semibold mb-1.5">
+              Campus Email
+            </label>
+            <input
+              id="cutora-email-input"
+              type="email"
+              value={email}
+              onChange={(e) => setEmail(e.target.value)}
+              placeholder="you@campus.edu"
+              autoComplete="email"
+              className="w-full bg-white text-slate-900 placeholder-slate-400 border border-slate-200 focus:border-amber-500 focus:ring-4 focus:ring-amber-500/15 focus:outline-none px-4 rounded-xl h-12 text-sm transition-all"
+            />
+
+            <label htmlFor="cutora-password-input" className="block text-slate-800 text-[13px] font-semibold mt-4 mb-1.5">
+              Password
+            </label>
+            <div className="relative flex items-center">
               <input
-                id="cutora-email-input"
-                type="email"
-                value={email}
-                onChange={(e) => setEmail(e.target.value)}
-                placeholder="Input your email"
-                autoComplete="email"
-                className="w-full bg-white text-[#000000] placeholder-[#95999F] border border-[#E2E4E7] focus:border-[#F59A08] focus:outline-none px-4 transition-colors"
-                style={{
-                  height: 'calc(66 * var(--u))',
-                  borderRadius: 'calc(10 * var(--u))',
-                  fontSize: 'calc(17 * var(--u))',
-                }}
+                id="cutora-password-input"
+                type={showPassword ? 'text' : 'password'}
+                value={password}
+                onChange={(e) => setPassword(e.target.value)}
+                placeholder="Any password works for the demo"
+                autoComplete="current-password"
+                className="w-full bg-white text-slate-900 placeholder-slate-400 border border-slate-200 focus:border-amber-500 focus:ring-4 focus:ring-amber-500/15 focus:outline-none pl-4 pr-12 rounded-xl h-12 text-sm transition-all"
               />
-            </div>
-
-            {/* Password Field with Eye Toggle */}
-            <div
-              className="cutora-fade-up"
-              style={{
-                marginTop: 'calc(22 * var(--u))',
-                animationDelay: '0.45s',
-              }}
-            >
-              <label
-                htmlFor="cutora-password-input"
-                className="block text-[#000000]"
-                style={{
-                  fontSize: 'calc(17.4 * var(--u))',
-                  fontWeight: 560,
-                  marginBottom: 'calc(10 * var(--u))',
-                }}
-              >
-                Password
-              </label>
-              <div className="relative flex items-center">
-                <input
-                  id="cutora-password-input"
-                  type={showPassword ? 'text' : 'password'}
-                  value={password}
-                  onChange={(e) => setPassword(e.target.value)}
-                  placeholder="Input your password"
-                  autoComplete="current-password"
-                  className="w-full bg-white text-[#000000] placeholder-[#95999F] border border-[#E2E4E7] focus:border-[#F59A08] focus:outline-none pl-4 pr-12 transition-colors"
-                  style={{
-                    height: 'calc(66 * var(--u))',
-                    borderRadius: 'calc(10 * var(--u))',
-                    fontSize: 'calc(17 * var(--u))',
-                  }}
-                />
-                <button
-                  type="button"
-                  aria-label={showPassword ? 'Hide password' : 'Show password'}
-                  onClick={() => setShowPassword((prev) => !prev)}
-                  className="absolute right-3.5 text-[#898D94] hover:text-[#000000] p-1.5 bg-transparent border-0 cursor-pointer"
-                >
-                  <svg
-                    width="22"
-                    height="22"
-                    viewBox="0 0 24 24"
-                    fill="none"
-                    stroke="currentColor"
-                    strokeWidth="2"
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
-                  >
-                    <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z" />
-                    <circle cx="12" cy="12" r="3" />
-                    {showPassword && <line x1="2" y1="2" x2="22" y2="22" />}
-                  </svg>
-                </button>
-              </div>
-            </div>
-
-            {/* Options Row: Remember Me Checkbox (26u) + Forgot Password? in amber */}
-            <div
-              className="flex items-center justify-between cutora-fade-up"
-              style={{
-                marginTop: 'calc(18 * var(--u))',
-                animationDelay: '0.52s',
-              }}
-            >
-              <label className="flex items-center gap-2.5 cursor-pointer select-none">
-                <input
-                  type="checkbox"
-                  checked={rememberMe}
-                  onChange={(e) => setRememberMe(e.target.checked)}
-                  className="sr-only"
-                />
-                <span
-                  className={`flex items-center justify-center border transition-colors ${
-                    rememberMe
-                      ? 'bg-[#000000] border-[#000000] text-white'
-                      : 'bg-white border-[#E2E4E7] text-transparent'
-                  }`}
-                  style={{
-                    width: 'calc(26 * var(--u))',
-                    height: 'calc(26 * var(--u))',
-                    borderRadius: 'calc(6 * var(--u))',
-                  }}
-                >
-                  <svg
-                    width="14"
-                    height="14"
-                    viewBox="0 0 24 24"
-                    fill="none"
-                    stroke="currentColor"
-                    strokeWidth="3"
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
-                  >
-                    <polyline points="20 6 9 17 4 12" />
-                  </svg>
-                </span>
-                <span
-                  className="text-[#5F636B]"
-                  style={{
-                    fontSize: 'calc(16.5 * var(--u))',
-                    fontWeight: 500,
-                  }}
-                >
-                  Remember Me
-                </span>
-              </label>
-
               <button
                 type="button"
-                onClick={() =>
-                  setFormMessage({
-                    type: 'info',
-                    text: 'Demo credentials are pre-filled for instant access. Click Login below to continue.',
-                  })
-                }
-                className="text-[#F59A08] hover:underline bg-transparent border-0 cursor-pointer"
-                style={{
-                  fontSize: 'calc(16.5 * var(--u))',
-                  fontWeight: 560,
-                }}
+                aria-label={showPassword ? 'Hide password' : 'Show password'}
+                onClick={() => setShowPassword((p) => !p)}
+                className="absolute right-3 text-slate-400 hover:text-slate-700 p-1.5 bg-transparent border-0 cursor-pointer"
               >
-                Forgot Password?
+                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                  <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z" />
+                  <circle cx="12" cy="12" r="3" />
+                  {showPassword && <line x1="2" y1="2" x2="22" y2="22" />}
+                </svg>
               </button>
             </div>
 
-            {/* Login Button: Full-width 66u pill, black #161515, with "Login" in amber #F59A08 */}
             <button
               type="submit"
               disabled={isSubmitting}
-              className="w-full bg-[#161515] hover:bg-[#000000] hover:shadow-xl text-[#F59A08] font-semibold cursor-pointer border-0 flex items-center justify-center cutora-fade-up"
-              style={{
-                marginTop: 'calc(38 * var(--u))',
-                height: 'calc(66 * var(--u))',
-                borderRadius: '9999px',
-                fontSize: 'calc(19 * var(--u))',
-                fontWeight: 620,
-                animationDelay: '0.58s',
-              }}
+              className="w-full mt-7 h-12 rounded-xl bg-slate-950 hover:bg-slate-900 disabled:opacity-60 text-amber-400 font-bold text-[15px] cursor-pointer border-0 flex items-center justify-center gap-2 transition-colors"
+              style={{ boxShadow: '0 10px 28px rgba(2,6,23,0.35)' }}
             >
-              {isSubmitting ? 'Authenticating...' : isSignUpMode ? 'Sign Up' : 'Login'}
+              {isSubmitting ? 'Preparing your workspace…' : 'Enter Demo Workspace'}
+              <span aria-hidden>→</span>
             </button>
           </form>
 
-          {/* Divider: "Or continue with:" with hairlines either side */}
-          <div
-            className="flex items-center gap-4 cutora-fade-up"
-            style={{
-              marginTop: 'calc(28 * var(--u))',
-              marginBottom: 'calc(24 * var(--u))',
-              animationDelay: '0.64s',
-            }}
-          >
-            <div className="flex-1 h-px bg-[#E9EAEC]" />
-            <span
-              className="text-[#898D94] whitespace-nowrap"
-              style={{
-                fontSize: 'calc(15.5 * var(--u))',
-                fontWeight: 480,
-              }}
-            >
-              Or continue with:
-            </span>
-            <div className="flex-1 h-px bg-[#E9EAEC]" />
+          <div className="flex items-center gap-3 mt-6 mb-5">
+            <div className="flex-1 h-px bg-slate-200" />
+            <span className="text-slate-400 text-xs font-medium">or</span>
+            <div className="flex-1 h-px bg-slate-200" />
           </div>
 
-          {/* Google Button: 66u white pill with multicolour Google "G" and "Continue with Google" */}
           <button
             type="button"
             disabled={isSubmitting}
             onClick={handleGoogleLogin}
-            className="w-full bg-white hover:bg-slate-50 text-[#000000] border border-[#E2E4E7] flex items-center justify-center gap-3 cursor-pointer cutora-fade-up"
-            style={{
-              height: 'calc(66 * var(--u))',
-              borderRadius: '9999px',
-              fontSize: 'calc(17.4 * var(--u))',
-              fontWeight: 560,
-              animationDelay: '0.7s',
-            }}
+            className="w-full h-12 bg-white hover:bg-slate-50 text-slate-800 border border-slate-200 hover:border-slate-300 rounded-xl flex items-center justify-center gap-3 cursor-pointer text-sm font-semibold transition-colors"
           >
-            <svg width="22" height="22" viewBox="0 0 24 24" aria-hidden="true">
-              <path
-                fill="#EA4335"
-                d="M12 5c1.6 0 3 .6 4.1 1.7l3.1-3.1C17.3 1.8 14.8 1 12 1 7.4 1 3.5 3.6 1.6 7.4l3.7 2.8C6.2 7.2 8.9 5 12 5z"
-              />
-              <path
-                fill="#4285F4"
-                d="M23.5 12.3c0-.8-.1-1.6-.2-2.3H12v4.5h6.5c-.3 1.5-1.1 2.8-2.4 3.6l3.7 2.9c2.2-2 3.7-5 3.7-8.7z"
-              />
-              <path
-                fill="#FBBC05"
-                d="M5.3 14.8c-.2-.8-.4-1.8-.4-2.8s.2-2 .4-2.8L1.6 6.4C.6 8.4 0 10.6 0 12s.6 3.6 1.6 5.6l3.7-2.8z"
-              />
-              <path
-                fill="#34A853"
-                d="M12 23c3.2 0 6-1.1 8-3l-3.7-2.9c-1.1.7-2.5 1.2-4.3 1.2-3.1 0-5.8-2.1-6.7-5l-3.7 2.8C3.5 19.9 7.4 23 12 23z"
-              />
+            <svg width="19" height="19" viewBox="0 0 24 24" aria-hidden="true">
+              <path fill="#EA4335" d="M12 5c1.6 0 3 .6 4.1 1.7l3.1-3.1C17.3 1.8 14.8 1 12 1 7.4 1 3.5 3.6 1.6 7.4l3.7 2.8C6.2 7.2 8.9 5 12 5z" />
+              <path fill="#4285F4" d="M23.5 12.3c0-.8-.1-1.6-.2-2.3H12v4.5h6.5c-.3 1.5-1.1 2.8-2.4 3.6l3.7 2.9c2.2-2 3.7-5 3.7-8.7z" />
+              <path fill="#FBBC05" d="M5.3 14.8c-.2-.8-.4-1.8-.4-2.8s.2-2 .4-2.8L1.6 6.4C.6 8.4 0 10.6 0 12s.6 3.6 1.6 5.6l3.7-2.8z" />
+              <path fill="#34A853" d="M12 23c3.2 0 6-1.1 8-3l-3.7-2.9c-1.1.7-2.5 1.2-4.3 1.2-3.1 0-5.8-2.1-6.7-5l-3.7 2.8C3.5 19.9 7.4 23 12 23z" />
             </svg>
-            <span>Continue with Google</span>
+            Continue with Google
           </button>
 
-          {/* Footer Line: "Don’t have an account? Sign up here", with the link in amber */}
-          <p
-            className="text-center text-[#5F636B] cutora-fade-up"
-            style={{
-              marginTop: 'calc(26 * var(--u))',
-              fontSize: 'calc(16.5 * var(--u))',
-              fontWeight: 480,
-              animationDelay: '0.76s',
-            }}
-          >
-            <span>{isSignUpMode ? 'Already have an account?' : 'Don’t have an account?'}</span>
-            <button
-              type="button"
-              onClick={() => setIsSignUpMode((prev) => !prev)}
-              className="ml-1.5 text-[#F59A08] font-semibold hover:underline bg-transparent border-0 cursor-pointer p-0"
-              style={{
-                fontSize: 'calc(16.5 * var(--u))',
-              }}
-            >
-              {isSignUpMode ? 'Log in here' : 'Sign up here'}
-            </button>
+          <p className="text-center text-slate-400 text-xs mt-6 leading-relaxed">
+            Demo build — no data leaves this device unauthenticated.
+            <br />Google sign-in syncs preferences privately to Firestore.
           </p>
         </div>
       </div>
