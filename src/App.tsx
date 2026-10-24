@@ -643,6 +643,14 @@ export default function App() {
         />
       )}
 
+      {/* Skip link for keyboard & screen-reader users */}
+      <a
+        href="#main-top"
+        className="sr-only focus:not-sr-only focus:fixed focus:top-3 focus:left-3 focus:z-[60] focus:rounded-xl focus:bg-amber-400 focus:text-slate-950 focus:font-bold focus:text-sm focus:px-4 focus:py-2.5 focus:shadow-xl"
+      >
+        Skip to workspace content
+      </a>
+
       {/* TOP BAR CONTRACT: 3 Zones (Brand — Nav Links — Primary Action) */}
       <header
         className={`sticky top-0 z-30 flex items-center justify-between gap-8 px-6 py-3.5 border-b ${
@@ -737,11 +745,27 @@ export default function App() {
             </span>
             {(
               [
-                { id: 'standard', label: 'Standard' },
-                { id: 'low-vision', label: 'Low Vision' },
-                { id: 'focus-reading', label: 'Focus Reading' },
-                { id: 'audio-first', label: 'Audio First' },
-              ] as { id: AccessPersonaId; label: string }[]
+                {
+                  id: 'standard',
+                  label: 'Standard',
+                  desc: 'Default lettering, contrast, and spacing for most readers.',
+                },
+                {
+                  id: 'low-vision',
+                  label: 'Low Vision',
+                  desc: 'High contrast, larger 22px text, wider line spacing, and a reading ruler.',
+                },
+                {
+                  id: 'focus-reading',
+                  label: 'Focus Reading',
+                  desc: 'Bionic bolding + dyslexia-friendly font + spotlight support for dyslexia and attention differences.',
+                },
+                {
+                  id: 'audio-first',
+                  label: 'Audio First',
+                  desc: 'Listen-first mode with slightly faster speech — ideal for auditory learners and screen-reader users.',
+                },
+              ] as { id: AccessPersonaId; label: string; desc?: string }[]
             ).map((preset) => {
               const isActive = preferences.persona === preset.id;
               return (
@@ -749,6 +773,7 @@ export default function App() {
                   key={preset.id}
                   type="button"
                   aria-pressed={isActive}
+                  title={preset.desc}
                   onClick={() => {
                     const next = applyAccessPersonaPreset(
                       preset.id,
@@ -886,7 +911,11 @@ export default function App() {
       </section>
 
       {/* MAIN CONTENT CONTAINER */}
-      <main id="top" className="flex-1 max-w-[1440px] w-full mx-auto px-4 sm:px-6 py-4 space-y-4">
+      <main
+        id="main-top"
+        tabIndex={-1}
+        className="flex-1 max-w-[1440px] w-full mx-auto px-4 sm:px-6 py-4 space-y-4 focus:outline-none"
+      >
         {/* HERO BANNER */}
         <section
           className={`relative rounded-3xl border overflow-hidden flex flex-col lg:flex-row items-stretch justify-between gap-2 ${
@@ -938,7 +967,7 @@ export default function App() {
               Turn dense textbooks, scans, and lectures into{' '}
               <strong className="text-amber-300">Bionic Reading</strong>,{' '}
               <strong className="text-teal-300">Braille (.BRF)</strong>,{' '}
-              <strong className="text-teal-300">ADHD Flashcards</strong>, and{' '}
+              <strong className="text-teal-300">Focus Flashcards</strong>, and{' '}
               <strong className="text-teal-300">multilingual</strong> study modes — with verifiable
               sources for every converted paragraph.
             </p>

@@ -20,7 +20,7 @@ CampusAccess converts **one document** into multiple personalized accessible for
 | 👁️ **Bionic Reading** | Bold prefixes that guide the eye for dyslexic readers |
 | ✋ **Reading Ruler** | Mouse-following highlight bar |
 | 🔠 **Vision & Math Braille** | Valid Grade-1 **.BRF export** + Unicode braille preview |
-| 🃏 **ADHD Flashcards** | Bite-sized checkpoint cards with progress tracking |
+| 🃏 **Focus Flashcards** | Bite-sized checkpoint cards with progress tracking (designed for ADHD learners, loved by everyone) |
 | 🌐 **Multilingual Simplifier** | English → Telugu / Hindi simple-language versions |
 | 🔊 **Read Aloud** | Web Speech API TTS with 0.5x–2x speed control |
 | 🕵️ **SourceTrace™** | Every section shows its exact source quote + PDF page citation — **zero hallucination** |

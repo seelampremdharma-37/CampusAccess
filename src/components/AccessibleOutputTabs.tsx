@@ -69,6 +69,7 @@ export const AccessibleOutputTabs: React.FC<AccessibleOutputTabsProps> = ({
 }) => {
   const [activeTab, setActiveTab] = useState<OutputTabId>('reader');
   const [flippedCards, setFlippedCards] = useState<Record<string, boolean>>({});
+  const [spotlightParagraph, setSpotlightParagraph] = useState<number | null>(null);
   const [explainMode, setExplainMode] = useState<'simplify' | 'summarize' | 'questions' | null>(
     null
   );
@@ -85,61 +86,46 @@ export const AccessibleOutputTabs: React.FC<AccessibleOutputTabsProps> = ({
     setExplainResult(null);
   }, [activeSection.id]);
 
+  // Release paragraph spotlight on Escape (keyboard-friendly)
+  useEffect(() => {
+    const handleKey = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') setSpotlightParagraph(null);
+    };
+    window.addEventListener('keydown', handleKey);
+    return () => window.removeEventListener('keydown', handleKey);
+  }, []);
+
   const hc = preferences.highContrast;
 
-  const renderParagraphWithBionicAndSearch = (paragraph: string, idx: number) => {
+  const renderInlineContent = (paragraph: string) => {
     const query = searchQuery.trim().toLowerCase();
 
     if (preferences.bionicReading) {
       const tokens = tokenizeBionicText(paragraph);
-      return (
-        <p
-          key={idx}
-          style={{
-            fontSize: `${preferences.fontSize}px`,
-            lineHeight: preferences.lineSpacing,
-          }}
-          className={`mb-4 ${preferences.dyslexiaFont ? 'font-dyslexic' : ''}`}
-        >
-          {tokens.map((tok, tIdx) => {
-            const fullWord = tok.prefix + tok.suffix;
-            const isMatch = query.length > 1 && fullWord.toLowerCase().includes(query);
-            return (
-              <React.Fragment key={tIdx}>
-                <span
-                  className={
-                    isMatch
-                      ? 'bg-amber-300 text-slate-950 px-0.5 rounded'
-                      : undefined
-                  }
-                >
-                  <strong className={hc ? 'font-extrabold text-amber-300' : 'font-extrabold text-slate-950'}>
-                    {tok.prefix}
-                  </strong>
-                  <span className={hc ? 'text-slate-100' : 'text-slate-700'}>{tok.suffix}</span>
-                </span>
-                {tok.whitespace}
-              </React.Fragment>
-            );
-          })}
-        </p>
-      );
+      return tokens.map((tok, tIdx) => {
+        const fullWord = tok.prefix + tok.suffix;
+        const isMatch = query.length > 1 && fullWord.toLowerCase().includes(query);
+        return (
+          <React.Fragment key={tIdx}>
+            <span
+              className={
+                isMatch
+                  ? 'bg-amber-300 text-slate-950 px-0.5 rounded'
+                  : undefined
+              }
+            >
+              <strong className={hc ? 'font-extrabold text-amber-300' : 'font-extrabold text-slate-950'}>
+                {tok.prefix}
+              </strong>
+              <span className={hc ? 'text-slate-100' : 'text-slate-700'}>{tok.suffix}</span>
+            </span>
+            {tok.whitespace}
+          </React.Fragment>
+        );
+      });
     }
 
-    return (
-      <p
-        key={idx}
-        style={{
-          fontSize: `${preferences.fontSize}px`,
-          lineHeight: preferences.lineSpacing,
-        }}
-        className={`mb-4 ${preferences.dyslexiaFont ? 'font-dyslexic' : ''} ${
-          hc ? 'text-slate-100' : 'text-slate-800'
-        }`}
-      >
-        {paragraph}
-      </p>
-    );
+    return paragraph;
   };
 
   const handleExplainAction = async (mode: 'simplify' | 'summarize' | 'questions') => {
@@ -244,7 +230,7 @@ export const AccessibleOutputTabs: React.FC<AccessibleOutputTabsProps> = ({
           [
             { id: 'reader', icon: BookOpenCheck, label: 'Smart Reader', sub: 'Bionic Read-Aloud' },
             { id: 'vision-math', icon: Eye, label: 'Vision & Math', sub: 'Braille + Diagrams' },
-            { id: 'adhd-mindmap', icon: BrainCircuit, label: 'ADHD & Mind Map', sub: 'Flashcards' },
+            { id: 'adhd-mindmap', icon: BrainCircuit, label: 'Focus & Flashcards', sub: 'Micro-learning' },
             { id: 'multilingual', icon: Languages, label: 'Multilingual', sub: 'English · Telugu · Hindi' },
           ] as { id: OutputTabId; icon: typeof BookOpenCheck; label: string; sub: string }[]
         ).map(({ id, icon: Icon, label, sub }) => {
@@ -421,9 +407,61 @@ export const AccessibleOutputTabs: React.FC<AccessibleOutputTabsProps> = ({
                 : 'bg-slate-50/70 border-slate-200/90'
             }`}
           >
-            {activeSection.accessibleParagraphs.map((para, idx) =>
-              renderParagraphWithBionicAndSearch(para, idx)
-            )}
+            {/* Paragraph Spotlight hint */}
+            <div className="flex items-center justify-between gap-2 mb-3">
+              <span
+                className={`text-[10px] font-semibold uppercase tracking-wider ${
+                  hc ? 'text-amber-300/80' : 'text-slate-400'
+                }`}
+              >
+                {spotlightParagraph === null
+                  ? 'Tip: click any paragraph to spotlight it for distraction-free reading'
+                  : 'Spotlight active — click the paragraph again or Esc to release'}
+              </span>
+              {spotlightParagraph !== null && (
+                <button
+                  type="button"
+                  onClick={() => setSpotlightParagraph(null)}
+                  className={`text-[10px] font-bold rounded-full px-2.5 py-1 cursor-pointer border ${
+                    hc
+                      ? 'bg-slate-800 border-slate-700 text-slate-200'
+                      : 'bg-white border-slate-300 text-slate-600 hover:border-slate-400'
+                  }`}
+                >
+                  Clear spotlight
+                </button>
+              )}
+            </div>
+
+            {activeSection.accessibleParagraphs.map((para, idx) => {
+              const isSpot = spotlightParagraph === idx;
+              const isDimmed = spotlightParagraph !== null && !isSpot;
+              return (
+                <p
+                  key={idx}
+                  onClick={() =>
+                    setSpotlightParagraph((prev) => (prev === idx ? null : idx))
+                  }
+                  style={{
+                    fontSize: `${preferences.fontSize}px`,
+                    lineHeight: preferences.lineSpacing,
+                  }}
+                  className={`mb-4 ${preferences.dyslexiaFont ? 'font-dyslexic' : ''} cursor-pointer rounded-lg transition-all duration-300 ${
+                    hc ? 'text-slate-100' : 'text-slate-800'
+                  } ${
+                    isSpot
+                      ? hc
+                        ? 'bg-slate-950 border border-amber-400/60 px-3 py-2 -mx-1'
+                        : 'bg-amber-50 border border-teal-400 px-3 py-2 -mx-1 shadow-sm'
+                      : isDimmed
+                      ? 'opacity-30 hover:opacity-60'
+                      : ''
+                  }`}
+                >
+                  {renderInlineContent(para)}
+                </p>
+              );
+            })}
 
             {/* Key Takeaway Callout */}
             <div
@@ -720,16 +758,17 @@ export const AccessibleOutputTabs: React.FC<AccessibleOutputTabsProps> = ({
         </div>
       )}
 
-      {/* TAB 3: ADHD MICRO-LEARNING & MIND MAP */}
+      {/* TAB 3: FOCUS MICRO-LEARNING & MIND MAP */}
       {activeTab === 'adhd-mindmap' && (
-        <div className="space-y-5" role="tabpanel" aria-label="ADHD Micro-Learning and Mind Map">
+        <div className="space-y-5" role="tabpanel" aria-label="Focus Micro-Learning and Mind Map">
           <div className="flex flex-wrap items-center justify-between gap-2">
             <div>
               <h3 className="text-lg font-extrabold">
-                ADHD Micro-Learning Flashcards & Concept Checklist
+                Focus Micro-Learning Flashcards &amp; Concept Checklist
               </h3>
               <p className={`text-xs ${hc ? 'text-slate-300' : 'text-slate-500'}`}>
-                Bite-sized visual cards, interactive mind-map nodes, and progress checkpoints to reduce cognitive overload.
+                Bite-sized cards, mind-map nodes, and progress checkpoints that cut cognitive
+                overload — built for ADHD learners and great for fast revision for everyone.
               </p>
             </div>
             <span className="text-xs font-mono font-bold tabular-nums">
