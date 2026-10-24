@@ -29,6 +29,7 @@ import {
   convertToUnicodeBraille,
   formatSourceTraceCitation,
 } from '../utils/accessibilityLogic';
+import { apiUrl } from '../api';
 
 export type OutputTabId = 'reader' | 'vision-math' | 'adhd-mindmap' | 'multilingual';
 
@@ -132,10 +133,11 @@ export const AccessibleOutputTabs: React.FC<AccessibleOutputTabsProps> = ({
     setExplainMode(mode);
     setExplainLoading(true);
     try {
-      const endpoint =
+      const endpoint = apiUrl(
         mode === 'summarize'
           ? `/api/documents/${document.id}/summarize`
-          : `/api/documents/${document.id}/explain`;
+          : `/api/documents/${document.id}/explain`
+      );
 
       const response = await fetch(endpoint, {
         method: 'POST',

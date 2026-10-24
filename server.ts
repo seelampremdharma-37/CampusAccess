@@ -9,7 +9,13 @@ import {
   parseTextIntoSections,
 } from './src/utils/accessibilityLogic';
 
-const PORT = 3000;
+// Cloud hosts (Render/Railway/Fly) inject PORT; local dev falls back to 3000
+const PORT = Number(process.env.PORT) || 3000;
+// Optional: allow cross-origin API use (e.g. Vercel frontend + Render API)
+const ALLOWED_ORIGINS = (process.env.ALLOWED_ORIGINS || '')
+  .split(',')
+  .map((s) => s.trim())
+  .filter(Boolean);
 
 function getGeminiClient(): GoogleGenAI | null {
   const apiKey = process.env.GEMINI_API_KEY;
@@ -39,6 +45,22 @@ for (const doc of SAMPLE_MATERIALS) {
 async function startServer() {
   const app = express();
   app.use(express.json({ limit: '15mb' }));
+
+  // CORS only when ALLOWED_ORIGINS is set (Vercel/Render split deployments)
+  if (ALLOWED_ORIGINS.length > 0) {
+    app.use((req, res, next) => {
+      const origin = req.headers.origin || '';
+      if (ALLOWED_ORIGINS.includes(origin)) {
+        res.setHeader('Access-Control-Allow-Origin', origin);
+        res.setHeader('Access-Control-Allow-Headers', 'Content-Type');
+        res.setHeader('Access-Control-Allow-Methods', 'GET,POST,PUT,OPTIONS');
+      }
+      if (req.method === 'OPTIONS') {
+        return res.sendStatus(204);
+      }
+      return next();
+    });
+  }
 
   // 1. GET /api/health
   app.get('/api/health', (_req, res) => {

@@ -12,6 +12,7 @@ import {
   DocumentSection,
   LearningMaterialDocument,
 } from '../data/sampleMaterials';
+import { apiUrl } from '../api';
 
 interface ChatMessage {
   id: string;
@@ -112,7 +113,7 @@ export const ChatbotDrawer: React.FC<ChatbotDrawerProps> = ({
 
     let replyText = '';
     try {
-      const response = await fetch('/api/chat', {
+      const response = await fetch(apiUrl('/api/chat'), {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({

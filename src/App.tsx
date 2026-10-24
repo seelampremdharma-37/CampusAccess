@@ -46,6 +46,7 @@ import {
   parseTextIntoSections,
   formatSourceTraceCitation,
 } from './utils/accessibilityLogic';
+import { apiUrl } from './api';
 import {
   auth,
   onAuthStateChanged,
@@ -218,7 +219,7 @@ export default function App() {
           // Ignore
         }
         const sessionId = session?.uid || 'local-demo-session';
-        fetch(`/api/preferences/${sessionId}`, {
+        fetch(apiUrl(`/api/preferences/${sessionId}`), {
           method: 'PUT',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify(next),
@@ -244,7 +245,7 @@ export default function App() {
       } catch {
         // Ignore
       }
-      fetch(`/api/progress/${docId}`, {
+      fetch(apiUrl(`/api/progress/${docId}`), {
         method: 'PUT',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
@@ -467,7 +468,7 @@ export default function App() {
         .replace(/[^\x20-\x7E\r\n]/g, ' ')
         .replace(/\s{3,}/g, '\n');
 
-      const response = await fetch('/api/documents', {
+      const response = await fetch(apiUrl('/api/documents'), {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({

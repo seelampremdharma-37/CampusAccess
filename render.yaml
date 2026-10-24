@@ -1,0 +1,21 @@
+# Render.com Blueprint — single-service deployment (frontend + API together)
+# Deploy via Render Dashboard → New → Blueprint, or: render blueprint launch
+services:
+  - type: web
+    name: campusaccess
+    runtime: node
+    plan: free            # free tier = spin-down after inactivity; first load cold-starts ~40s
+    region: singapore     # closest to IN — pick your nearest region
+    buildCommand: npm install --legacy-peer-deps && npm run build
+    startCommand: npx tsx server.ts
+    healthCheckPath: /api/health
+    envVars:
+      - key: NODE_ENV
+        value: production
+      - key: GEMINI_API_KEY
+        sync: false       # set your Gemini key in Render dashboard (Get from aistudio.google.com/apikey)
+      # Leave blank ONLY if you host everything on Render (recommended).
+      # If you split (Vercel frontend + Render API), set ALLOWED_ORIGINS to your
+      # Vercel origins, and set VITE_API_BASE_URL in the Vercel build env instead.
+      - key: ALLOWED_ORIGINS
+        sync: false
