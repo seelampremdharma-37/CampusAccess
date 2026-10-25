@@ -6,6 +6,8 @@
 
 *Accessible Learning Material Converter — Innovators Conclave 2026 · Problem ID: IC26-02-05 · EdTech & AI/ML*
 
+**🔴 LIVE**: [https://campusaccess-rso3.onrender.com](https://campusaccess-rso3.onrender.com)
+
 </div>
 
 ## 📖 The Problem
@@ -42,10 +44,12 @@ CampusAccess converts **one document** into multiple personalized accessible for
 
 ### 🚀 Run Locally
 ```bash
-npm install --legacy-peer-deps
+npm install
 npm run dev
 ```
 Open http://localhost:3000 — works **without** a Gemini key (bundled verified fallbacks).
+
+**Deployed (single-service, Render):** build `npm install && npm run build` · start `npm start` with `NODE_ENV=production` + `GEMINI_API_KEY`. Blueprint included in `render.yaml`. Firebase authorized-domain required for Google sign-in.
 
 ## 📂 Project Structure
 ```
