@@ -32,6 +32,88 @@ function getGeminiClient(): GoogleGenAI | null {
   });
 }
 
+// ─────────────────────────────────────────────────────────────
+// MULTI-PROVIDER AI ORCHESTRATOR
+// Chain: Gemini (if key) → OpenRouter (if key) → verified bundled sample.
+// The app is never dependent on a single AI vendor.
+// ─────────────────────────────────────────────────────────────
+type AiSource = 'live-gemini-ai' | 'live-openrouter' | null;
+
+const GEMINI_MODEL = process.env.GEMINI_MODEL || 'gemini-2.5-flash';
+const OPENROUTER_KEY =
+  process.env.OPENROUTER_API_KEY &&
+  process.env.OPENROUTER_API_KEY.trim() !== '' &&
+  process.env.OPENROUTER_API_KEY !== 'MY_OPENROUTER_API_KEY'
+    ? process.env.OPENROUTER_API_KEY.trim()
+    : null;
+const OPENROUTER_MODEL = process.env.OPENROUTER_MODEL || 'openai/gpt-4o-mini';
+
+async function callOpenRouter(
+  prompt: string,
+  systemInstruction?: string
+): Promise<string | null> {
+  if (!OPENROUTER_KEY) return null;
+  try {
+    const res = await fetch('https://openrouter.ai/api/v1/chat/completions', {
+      method: 'POST',
+      headers: {
+        Authorization: `Bearer ${OPENROUTER_KEY}`,
+        'Content-Type': 'application/json',
+        'HTTP-Referer': process.env.APP_URL || 'https://campusaccess.onrender.com',
+        'X-Title': 'CampusAccess IC26-02-05',
+      },
+      body: JSON.stringify({
+        model: OPENROUTER_MODEL,
+        messages: [
+          ...(systemInstruction
+            ? [{ role: 'system' as const, content: systemInstruction }]
+            : []),
+          { role: 'user' as const, content: prompt },
+        ],
+      }),
+    });
+    if (!res.ok) {
+      console.warn(`OpenRouter responded ${res.status}: ${await res.text()}`);
+      return null;
+    }
+    const data = (await res.json()) as {
+      choices?: Array<{ message?: { content?: string } }>;
+    };
+    const content = data?.choices?.[0]?.message?.content?.trim();
+    return content || null;
+  } catch (err) {
+    console.warn('OpenRouter call failed:', err);
+    return null;
+  }
+}
+
+async function generateAI(
+  prompt: string,
+  systemInstruction?: string
+): Promise<{ text: string; source: AiSource } | null> {
+  // Route 1: Gemini first
+  const ai = getGeminiClient();
+  if (ai) {
+    try {
+      const response = await ai.models.generateContent({
+        model: GEMINI_MODEL,
+        contents: prompt,
+        config: systemInstruction ? { systemInstruction } : undefined,
+      });
+      if (response.text) {
+        return { text: response.text, source: 'live-gemini-ai' };
+      }
+    } catch (err) {
+      console.warn('Gemini unavailable — routing to next provider:', err);
+    }
+  }
+  // Route 2: OpenRouter
+  const or = await callOpenRouter(prompt, systemInstruction);
+  if (or) return { text: or, source: 'live-openrouter' };
+  // Route 3: caller falls back to bundled verified samples
+  return null;
+}
+
 // In-memory store for uploaded documents, session preferences, and reading progress
 const documentsStore = new Map<string, any>();
 const preferencesStore = new Map<string, AccessibilityPreferences>();
@@ -64,12 +146,16 @@ async function startServer() {
 
   // 1. GET /api/health
   app.get('/api/health', (_req, res) => {
-    const hasGemini = Boolean(getGeminiClient());
     res.json({
       status: 'ok',
       service: 'CampusAccess Backend (IC26-02-05)',
       persistenceMode: 'firebase-firestore-plus-memory-fallback',
-      geminiConfigured: hasGemini,
+      aiOrchestration: {
+        chain: ['gemini', 'openrouter', 'bundled-verified-sample'],
+        geminiConfigured: Boolean(getGeminiClient()),
+        openrouterConfigured: Boolean(OPENROUTER_KEY),
+        openrouterModel: OPENROUTER_MODEL,
+      },
       bundledDocumentsCount: documentsStore.size,
       timestamp: new Date().toISOString(),
     });
@@ -143,22 +229,13 @@ async function startServer() {
   // 5. POST /api/documents/:id/summarize
   app.post('/api/documents/:id/summarize', async (req, res) => {
     const { sectionId, sectionTitle, text } = req.body || {};
-    const ai = getGeminiClient();
 
-    if (ai && text) {
-      try {
-        const response = await ai.models.generateContent({
-          model: 'gemini-3.8-flash',
-          contents: `Summarize the following educational section ("${sectionTitle || sectionId}") into 3 clear, accessible bullet points for university students:\n\n${text}`,
-        });
-        if (response.text) {
-          return res.json({
-            source: 'live-gemini-ai',
-            result: response.text,
-          });
-        }
-      } catch (err) {
-        console.warn('Gemini summarize fallback triggered:', err);
+    if (text) {
+      const result = await generateAI(
+        `Summarize the following educational section ("${sectionTitle || sectionId}") into 3 clear, accessible bullet points for university students:\n\n${text}`
+      );
+      if (result) {
+        return res.json({ source: result.source, result: result.text });
       }
     }
 
@@ -178,27 +255,16 @@ async function startServer() {
   // 6. POST /api/documents/:id/explain
   app.post('/api/documents/:id/explain', async (req, res) => {
     const { sectionId, sectionTitle, mode, text } = req.body || {};
-    const ai = getGeminiClient();
 
-    if (ai && text) {
-      try {
-        const prompt =
-          mode === 'questions'
-            ? `Create 2 practice study questions with clear answers based on this educational section ("${sectionTitle}"):\n\n${text}`
-            : `Explain the following educational concept ("${sectionTitle}") in simple, everyday language with an intuitive real-world analogy for a student with learning differences:\n\n${text}`;
+    if (text) {
+      const prompt =
+        mode === 'questions'
+          ? `Create 2 practice study questions with clear answers based on this educational section ("${sectionTitle}"):\n\n${text}`
+          : `Explain the following educational concept ("${sectionTitle}") in simple, everyday language with an intuitive real-world analogy for a student with learning differences:\n\n${text}`;
 
-        const response = await ai.models.generateContent({
-          model: 'gemini-3.8-flash',
-          contents: prompt,
-        });
-        if (response.text) {
-          return res.json({
-            source: 'live-gemini-ai',
-            result: response.text,
-          });
-        }
-      } catch (err) {
-        console.warn('Gemini explain fallback triggered:', err);
+      const result = await generateAI(prompt);
+      if (result) {
+        return res.json({ source: result.source, result: result.text });
       }
     }
 
@@ -230,35 +296,25 @@ async function startServer() {
       return res.status(400).json({ error: 'Message is required.' });
     }
 
-    const ai = getGeminiClient();
-    if (ai) {
-      try {
-        const systemInstruction = [
-          'You are the CampusAccess AI Study & Accessibility Tutor (Problem ID: IC26-02-05).',
-          'You help students understand complex textbooks, physics formulas, computer science data structures, biology lectures, diagrams, and multilingual translations (English, Telugu, Hindi).',
-          'Always answer accurately, clearly, and encouragingly. Break down equations and concepts step-by-step.',
-          context
-            ? `Active Document Context: "${context.documentTitle}", Section ${context.sectionCode}: "${context.sectionTitle}" (PDF Page ${context.pageNumber ?? 'N/A'}). Formula: ${context.formula?.raw}. Key Takeaway: ${context.keyTakeaway}.`
-            : '',
-        ].join(' ');
+    try {
+      const systemInstruction = [
+        'You are the CampusAccess AI Study & Accessibility Tutor (Problem ID: IC26-02-05).',
+        'You help students understand complex textbooks, physics formulas, computer science data structures, biology lectures, diagrams, and multilingual translations (English, Telugu, Hindi).',
+        'Always answer accurately, clearly, and encouragingly. Break down equations and concepts step-by-step.',
+        context
+          ? `Active Document Context: "${context.documentTitle}", Section ${context.sectionCode}: "${context.sectionTitle}" (PDF Page ${context.pageNumber ?? 'N/A'}). Formula: ${context.formula?.raw}. Key Takeaway: ${context.keyTakeaway}.`
+          : '',
+      ].join(' ');
 
-        const response = await ai.models.generateContent({
-          model: 'gemini-3.8-flash',
-          contents: message,
-          config: {
-            systemInstruction,
-          },
+      const result = await generateAI(message, systemInstruction);
+      if (result) {
+        return res.json({
+          source: result.source,
+          reply: result.text,
         });
-
-        if (response.text) {
-          return res.json({
-            source: 'live-gemini-ai',
-            reply: response.text,
-          });
-        }
-      } catch (err) {
-        console.warn('Gemini chat fallback triggered:', err);
       }
+    } catch (err) {
+      console.warn('AI chat chain failed:', err);
     }
 
     // Intelligent context-aware server fallback when GEMINI_API_KEY is not configured

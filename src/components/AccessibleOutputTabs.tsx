@@ -76,7 +76,7 @@ export const AccessibleOutputTabs: React.FC<AccessibleOutputTabsProps> = ({
   );
   const [explainLoading, setExplainLoading] = useState(false);
   const [explainResult, setExplainResult] = useState<{
-    source: 'live-gemini-ai' | 'bundled-verified-sample';
+    source: 'live-gemini-ai' | 'live-openrouter' | 'bundled-verified-sample';
     content: string;
   } | null>(null);
   const [brfDownloadedToast, setBrfDownloadedToast] = useState(false);
@@ -154,7 +154,12 @@ export const AccessibleOutputTabs: React.FC<AccessibleOutputTabsProps> = ({
         const data = await response.json();
         if (data && data.result) {
           setExplainResult({
-            source: data.source === 'live-gemini-ai' ? 'live-gemini-ai' : 'bundled-verified-sample',
+            source:
+              data.source === 'live-gemini-ai'
+                ? 'live-gemini-ai'
+                : data.source === 'live-openrouter'
+                ? 'live-openrouter'
+                : 'bundled-verified-sample',
             content: data.result,
           });
           setExplainLoading(false);
@@ -565,7 +570,9 @@ export const AccessibleOutputTabs: React.FC<AccessibleOutputTabsProps> = ({
                   <span className={hc ? 'text-amber-300' : 'text-violet-700'}>
                     Source:{' '}
                     {explainResult.source === 'live-gemini-ai'
-                      ? 'Live Server-Side Gemini AI Output'
+                      ? 'Live Gemini AI Output'
+                      : explainResult.source === 'live-openrouter'
+                      ? 'Live OpenRouter AI Output'
                       : 'Bundled Verified Textbook Sample Output'}
                   </span>
                   <button

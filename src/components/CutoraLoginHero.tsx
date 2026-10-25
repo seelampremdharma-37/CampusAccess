@@ -39,15 +39,24 @@ const SLIDES = [
   },
 ];
 
-const BIONIC_DEMO = tokenizeDemo();
+const SRC_PHRASE = 'Quantum tunneling lets particles cross barriers they cannot overcome classically.';
 
-function tokenizeDemo() {
-  const sentence = 'Harmonic oscillations pull every system back toward balance.';
-  return sentence.split(' ').map((word) => {
+function tokenizePhrase(phrase: string) {
+  return phrase.split(' ').map((word) => {
     const bold = Math.max(1, Math.ceil(word.length * 0.5));
     return { prefix: word.slice(0, bold), suffix: word.slice(bold) };
   });
 }
+
+const PREVIEWS: { num: string; label: string; accent: string }[] = [
+  { num: '01', label: 'Bionic Reading', accent: 'text-amber-300' },
+  { num: '02', label: 'Braille .BRF', accent: 'text-teal-300' },
+  { num: '03', label: 'Focus Flashcard', accent: 'text-amber-300' },
+  { num: '04', label: 'Telugu తెలుగు', accent: 'text-teal-300' },
+];
+
+const BIONIC_TOKENS = tokenizePhrase(SRC_PHRASE);
+const BRAILLE_LINE = '⠟⠥⠁⠝⠞⠥⠍ ⠞⠥⠝⠝⠑⠇⠊⠝⠛ ⠁⠇⠇⠕⠺⠎ ⠃⠁⠗⠗⠊⠑⠗⠎';
 
 export const CutoraLoginHero: React.FC<CutoraLoginHeroProps> = ({
   onLoginSuccess,
@@ -57,15 +66,20 @@ export const CutoraLoginHero: React.FC<CutoraLoginHeroProps> = ({
   const [password, setPassword] = useState('');
   const [showPassword, setShowPassword] = useState(false);
   const [activeDot, setActiveDot] = useState(0);
+  const [previewIdx, setPreviewIdx] = useState(0);
   const [formMessage, setFormMessage] = useState<{ type: 'error' | 'info'; text: string } | null>(
     null
   );
   const [isSubmitting, setIsSubmitting] = useState(false);
 
-  // Auto-advance hero slides every 6s
+  // Auto-advance hero slides every 6s and conversion preview every 2.8s
   useEffect(() => {
     const t = setInterval(() => setActiveDot((d) => (d + 1) % SLIDES.length), 6000);
-    return () => clearInterval(t);
+    const p = setInterval(() => setPreviewIdx((d) => (d + 1) % PREVIEWS.length), 2800);
+    return () => {
+      clearInterval(t);
+      clearInterval(p);
+    };
   }, []);
 
   const handleFormSubmit = (e: React.FormEvent) => {
@@ -225,20 +239,110 @@ export const CutoraLoginHero: React.FC<CutoraLoginHeroProps> = ({
 
         {/* Headline block */}
         <div className="mt-10 lg:mt-0 max-w-2xl">
-          {/* Bionic reading live demo chip */}
+          {/* Bionic reading headline chip */}
           <div
-            className="inline-flex flex-col gap-1.5 mb-6 cutora-fade-up"
+            className="inline-flex flex-col gap-1.5 mb-5 cutora-fade-up"
             style={{ animationDelay: '0.15s' }}
           >
             <span className="text-[10px] font-bold uppercase tracking-[0.18em] text-teal-300/80">
-              Bionic Reading · Live Sample
+              One paragraph · four accessible outputs
             </span>
-            <div className="inline-flex flex-wrap items-baseline gap-x-[3px] gap-y-1 rounded-xl border border-white/10 bg-white/[0.05] backdrop-blur px-4 py-2.5 text-[13px] sm:text-sm text-white/90">
-              {BIONIC_DEMO.map((t, i) => (
-                <span key={i}>
-                  <strong className="font-extrabold text-amber-300">{t.prefix}</strong>
-                  <span className="text-white/60">{t.suffix}</span>{' '}
+          </div>
+
+          {/* LIVE CONVERSION DEMO — the product showing itself */}
+          <div
+            className="max-w-xl rounded-2xl border border-white/12 bg-white/[0.045] backdrop-blur cutora-fade-up overflow-hidden"
+            style={{ animationDelay: '0.22s' }}
+          >
+            {/* fake window bar */}
+            <div className="flex items-center gap-1.5 px-4 pt-3">
+              <span className="w-2.5 h-2.5 rounded-full bg-red-400/70" />
+              <span className="w-2.5 h-2.5 rounded-full bg-amber-400/70" />
+              <span className="w-2.5 h-2.5 rounded-full bg-teal-400/70" />
+              <span className="ml-2 text-[9px] font-mono uppercase tracking-widest text-white/35">
+                IC26_Physics_Scan.pdf · Ch3 Sec3.2 · p.38
+              </span>
+            </div>
+
+            <div className="px-4 py-3.5">
+              {/* input line */}
+              <div className="text-[11px] text-white/40 mb-1.5 font-medium">Original scan</div>
+              <p className="text-[13px] leading-relaxed text-white/55 line-through decoration-white/20">
+                {SRC_PHRASE}
+              </p>
+
+              {/* transform arrow */}
+              <div className="flex items-center gap-2 my-2.5">
+                <div className="flex-1 h-px bg-gradient-to-r from-white/20 to-amber-400/50" />
+                <span className="text-[9px] font-mono font-bold uppercase tracking-widest text-amber-400">
+                  ↓ AccessibleConvert™
                 </span>
+                <div className="flex-1 h-px bg-gradient-to-l from-white/20 to-amber-400/50" />
+              </div>
+
+              {/* output preview */}
+              <div key={previewIdx} className="cutora-fade-up" style={{ animationDuration: '0.4s' }}>
+                <div className="flex items-center justify-between mb-1.5">
+                  <span className="text-[11px] text-white/40 font-medium">Output</span>
+                  <span className={`text-[10px] font-bold uppercase tracking-wider ${PREVIEWS[previewIdx].accent}`}>
+                    {PREVIEWS[previewIdx].num} · {PREVIEWS[previewIdx].label}
+                  </span>
+                </div>
+
+                {previewIdx === 0 && (
+                  <p className="text-[14px] leading-relaxed text-white/90">
+                    {BIONIC_TOKENS.map((t, i) => (
+                      <span key={i}>
+                        <strong className="font-extrabold text-amber-300">{t.prefix}</strong>
+                        <span className="text-white/65">{t.suffix}</span>{' '}
+                      </span>
+                    ))}
+                  </p>
+                )}
+                {previewIdx === 1 && (
+                  <p className="font-mono text-[17px] leading-relaxed tracking-[0.08em] break-words text-white/85">
+                    <span className="text-white/30 text-[12px] mr-2">out:</span>
+                    {BRAILLE_LINE}
+                  </p>
+                )}
+                {previewIdx === 2 && (
+                  <div className="rounded-lg border border-amber-400/40 bg-amber-400/10 px-3.5 py-2.5">
+                    <div className="text-[10px] font-bold uppercase tracking-wider text-amber-300">
+                      Q · Checkpoint 2/12
+                    </div>
+                    <div className="text-[13px] text-white/85 mt-0.5">
+                      Why can't the particle be blocked by the barrier?
+                    </div>
+                    <div className="text-[11px] text-teal-300/90 mt-1">
+                      A. Its wavefunction decays inside but never reaches zero.
+                    </div>
+                  </div>
+                )}
+                {previewIdx === 3 && (
+                  <p className="text-[15px] leading-relaxed text-white/90">
+                    <span className="text-white/30 text-[12px] mr-2 font-medium">తెలుగు:</span>
+                    భాష్పగ్రాహ్యము గట్టు కలిసిన ప్రతి భాగాన్ని కుదించి సులభ భాషలో వివరించబడుతుంది.
+                  </p>
+                )}
+              </div>
+            </div>
+
+            {/* preview dots */}
+            <div className="flex items-center justify-center gap-1.5 pb-3">
+              {PREVIEWS.map((_, i) => (
+                <button
+                  key={i}
+                  type="button"
+                  aria-label={`Preview output ${i + 1}`}
+                  onClick={() => setPreviewIdx(i)}
+                  className="cursor-pointer border-0 p-0 transition-all duration-300"
+                  style={{
+                    width: previewIdx === i ? 20 : 7,
+                    height: 7,
+                    borderRadius: 999,
+                    backgroundColor: previewIdx === i ? '#F59E0B' : 'rgba(255,255,255,0.25)',
+                  }}
+                />
               ))}
             </div>
           </div>
@@ -281,7 +385,7 @@ export const CutoraLoginHero: React.FC<CutoraLoginHeroProps> = ({
 
           {/* trust row */}
           <div className="flex flex-wrap items-center gap-2 mt-7 cutora-fade-up" style={{ animationDelay: '0.5s' }}>
-            {['Bionic Reading', 'Braille .BRF', 'ADHD Flashcards', 'Read-Aloud', 'SourceTrace™'].map(
+            {['Bionic Reading', 'Braille .BRF', 'Focus Flashcards', 'Read-Aloud', 'SourceTrace™'].map(
               (chip) => (
                 <span
                   key={chip}
