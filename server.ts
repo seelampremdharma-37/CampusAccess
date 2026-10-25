@@ -46,45 +46,69 @@ const OPENROUTER_KEY =
   process.env.OPENROUTER_API_KEY !== 'MY_OPENROUTER_API_KEY'
     ? process.env.OPENROUTER_API_KEY.trim()
     : null;
-const OPENROUTER_MODEL = process.env.OPENROUTER_MODEL || 'openai/gpt-4o-mini';
+// Free-tier friendly: 'openrouter/free' router auto-picks an available free
+// model ($0 cost). If it hiccups, fall through to specific free endpoints
+// (verified live Oct 2026). Override with OPENROUTER_MODEL in .env / Render.
+const OPENROUTER_MODEL = process.env.OPENROUTER_MODEL || 'openrouter/free';
+const OPENROUTER_FALLBACK_MODELS = [
+  'nvidia/nemotron-3.5-lightning:free', // fast, 1M ctx, consistently available
+  'cohere/north-mini-code:free',        // ultra-low latency
+];
+
+async function callOpenRouterModel(
+  model: string,
+  prompt: string,
+  systemInstruction?: string
+): Promise<string | null> {
+  const res = await fetch('https://openrouter.ai/api/v1/chat/completions', {
+    method: 'POST',
+    headers: {
+      Authorization: `Bearer ${OPENROUTER_KEY}`,
+      'Content-Type': 'application/json',
+      'HTTP-Referer': process.env.APP_URL || 'https://campusaccess.onrender.com',
+      'X-Title': 'CampusAccess IC26-02-05',
+    },
+    body: JSON.stringify({
+      model,
+      messages: [
+        ...(systemInstruction
+          ? [{ role: 'system' as const, content: systemInstruction }]
+          : []),
+        { role: 'user' as const, content: prompt },
+      ],
+    }),
+  });
+  if (!res.ok) {
+    console.warn(`OpenRouter ${model} responded ${res.status}`);
+    return null;
+  }
+  // A 200 is not always an answer: upstream failures arrive inside the body.
+  const data = (await res.json()) as {
+    choices?: Array<{ message?: { content?: string } }>;
+    error?: { message?: string } | string;
+  };
+  if (data?.error) {
+    console.warn(`OpenRouter ${model} in-body error: ${JSON.stringify(data.error).slice(0, 140)}`);
+    return null;
+  }
+  const content = data?.choices?.[0]?.message?.content?.trim();
+  return content || null;
+}
 
 async function callOpenRouter(
   prompt: string,
   systemInstruction?: string
 ): Promise<string | null> {
   if (!OPENROUTER_KEY) return null;
-  try {
-    const res = await fetch('https://openrouter.ai/api/v1/chat/completions', {
-      method: 'POST',
-      headers: {
-        Authorization: `Bearer ${OPENROUTER_KEY}`,
-        'Content-Type': 'application/json',
-        'HTTP-Referer': process.env.APP_URL || 'https://campusaccess.onrender.com',
-        'X-Title': 'CampusAccess IC26-02-05',
-      },
-      body: JSON.stringify({
-        model: OPENROUTER_MODEL,
-        messages: [
-          ...(systemInstruction
-            ? [{ role: 'system' as const, content: systemInstruction }]
-            : []),
-          { role: 'user' as const, content: prompt },
-        ],
-      }),
-    });
-    if (!res.ok) {
-      console.warn(`OpenRouter responded ${res.status}: ${await res.text()}`);
-      return null;
+  for (const model of [OPENROUTER_MODEL, ...OPENROUTER_FALLBACK_MODELS]) {
+    try {
+      const text = await callOpenRouterModel(model, prompt, systemInstruction);
+      if (text) return text;
+    } catch (err) {
+      console.warn(`OpenRouter ${model} call failed:`, err);
     }
-    const data = (await res.json()) as {
-      choices?: Array<{ message?: { content?: string } }>;
-    };
-    const content = data?.choices?.[0]?.message?.content?.trim();
-    return content || null;
-  } catch (err) {
-    console.warn('OpenRouter call failed:', err);
-    return null;
   }
+  return null;
 }
 
 async function generateAI(
