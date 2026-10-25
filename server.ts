@@ -1,7 +1,6 @@
 import 'dotenv/config';
 import express from 'express';
 import { createServer as createViteServer } from 'vite';
-import { GoogleGenAI } from '@google/genai';
 import { SAMPLE_MATERIALS } from './src/data/sampleMaterials';
 import {
   DEFAULT_PREFERENCES,
@@ -17,20 +16,11 @@ const ALLOWED_ORIGINS = (process.env.ALLOWED_ORIGINS || '')
   .map((s) => s.trim())
   .filter(Boolean);
 
-function getGeminiClient(): GoogleGenAI | null {
-  const apiKey = process.env.GEMINI_API_KEY;
-  if (!apiKey || apiKey === 'MY_GEMINI_API_KEY' || apiKey.trim() === '') {
-    return null;
-  }
-  return new GoogleGenAI({
-    apiKey,
-    httpOptions: {
-      headers: {
-        'User-Agent': 'campusaccess-build',
-      },
-    },
-  });
-}
+// Gemini API key from env — auth required; we verify with a real call chain.
+const GEMINI_KEY = (() => {
+  const k = (process.env.GEMINI_API_KEY || '').trim();
+  return k && k !== 'MY_GEMINI_API_KEY' ? k : null;
+})();
 
 // ─────────────────────────────────────────────────────────────
 // MULTI-PROVIDER AI ORCHESTRATOR
@@ -39,7 +29,7 @@ function getGeminiClient(): GoogleGenAI | null {
 // ─────────────────────────────────────────────────────────────
 type AiSource = 'live-gemini-ai' | 'live-openrouter' | null;
 
-const GEMINI_MODEL = process.env.GEMINI_MODEL || 'gemini-2.5-flash';
+const GEMINI_MODEL = process.env.GEMINI_MODEL || 'gemini-3.8-flash';
 const OPENROUTER_KEY =
   process.env.OPENROUTER_API_KEY &&
   process.env.OPENROUTER_API_KEY.trim() !== '' &&
@@ -111,26 +101,57 @@ async function callOpenRouter(
   return null;
 }
 
+async function callGemini(
+  prompt: string,
+  systemInstruction?: string
+): Promise<string | null> {
+  if (!GEMINI_KEY) return null;
+  // Direct REST call on purpose: the @google/genai SDK hangs on
+  // gemini-3.8-flash (reproduced: 30s stall, no response), while the
+  // plain REST endpoint answers. Hard 20s timeout so the orchestrator
+  // chain hands over to OpenRouter quickly on stalls.
+  const controller = new AbortController();
+  const timer = setTimeout(() => controller.abort(), 20000);
+  try {
+    const res = await fetch(
+      `https://generativelanguage.googleapis.com/v1beta/models/${GEMINI_MODEL}:generateContent`,
+      {
+        method: 'POST',
+        signal: controller.signal,
+        headers: {
+          'Content-Type': 'application/json',
+          'x-goog-api-key': GEMINI_KEY,
+        },
+        body: JSON.stringify({
+          contents: [{ parts: [{ text: prompt }] }],
+          ...(systemInstruction ? { system_instruction: { parts: [{ text: systemInstruction }] } } : {}),
+        }),
+      }
+    );
+    if (!res.ok) {
+      console.warn(`Gemini ${GEMINI_MODEL} responded ${res.status}`);
+      return null;
+    }
+    const data = (await res.json()) as {
+      candidates?: Array<{ content?: { parts?: Array<{ text?: string }> } }>;
+    };
+    const text = data?.candidates?.[0]?.content?.parts?.[0]?.text?.trim();
+    return text || null;
+  } catch (err) {
+    console.warn('Gemini call failed:', err);
+    return null;
+  } finally {
+    clearTimeout(timer);
+  }
+}
+
 async function generateAI(
   prompt: string,
   systemInstruction?: string
 ): Promise<{ text: string; source: AiSource } | null> {
   // Route 1: Gemini first
-  const ai = getGeminiClient();
-  if (ai) {
-    try {
-      const response = await ai.models.generateContent({
-        model: GEMINI_MODEL,
-        contents: prompt,
-        config: systemInstruction ? { systemInstruction } : undefined,
-      });
-      if (response.text) {
-        return { text: response.text, source: 'live-gemini-ai' };
-      }
-    } catch (err) {
-      console.warn('Gemini unavailable — routing to next provider:', err);
-    }
-  }
+  const g = await callGemini(prompt, systemInstruction);
+  if (g) return { text: g, source: 'live-gemini-ai' };
   // Route 2: OpenRouter
   const or = await callOpenRouter(prompt, systemInstruction);
   if (or) return { text: or, source: 'live-openrouter' };
@@ -176,7 +197,7 @@ async function startServer() {
       persistenceMode: 'firebase-firestore-plus-memory-fallback',
       aiOrchestration: {
         chain: ['gemini', 'openrouter', 'bundled-verified-sample'],
-        geminiConfigured: Boolean(getGeminiClient()),
+        geminiConfigured: Boolean(GEMINI_KEY),
         openrouterConfigured: Boolean(OPENROUTER_KEY),
         openrouterModel: OPENROUTER_MODEL,
       },
